@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Система судейства</title>
+    
+    <!-- Иконки Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- Наши стили -->
+    <link rel="stylesheet" href="style.css">
+    
+    <!-- Конфигурация (создадим позже) -->
+    <script src="config.js"></script>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🏆 СИСТЕМА СУДЕЙСТВА</h1>
+            <p class="subtitle">Оценка участников по порядку</p>
+        </header>
+
+        <main>
+            <div class="card">
+                <!-- Выбор судьи -->
+                <div class="form-group">
+                    <label>ВЫБЕРИТЕ СУДЬЮ</label>
+                    <select id="judgeSelect">
+                      <option value="">-- Выберите судью --</option>
+                      <!-- Заполнится автоматически из Google Sheets -->
+                    </select>
+                </div>
+                
+                <!-- Выбор категории -->
+                <div class="form-group">
+                    <label>ВЫБЕРИТЕ КАТЕГОРИЮ</label>
+                    <select id="categorySelect">
+                        <option value="">-- Выберите категорию --</option>
+                        <option value="category1">Фигуры «Категория 1»</option>
+                        <option value="under10">Фигуры «10 лет и моложе»</option>
+                        <option value="under12">Фигуры «12 лет и моложе»</option>
+                        <option value="solo">Соло</option>
+                        <option value="duets">Дуэты</option>
+                    </select>
+                </div>
+                
+                <!-- Выбор фигуры (скрыт по умолчанию) -->
+                <div class="form-group" id="figureGroup" style="display: none;">
+                    <label>ВЫБЕРИТЕ ФИГУРУ</label>
+                    <select id="figureSelect">
+                        <option value="">-- Выберите фигуру --</option>
+                        <option value="figure1">Фигура 1</option>
+                        <option value="figure2">Фигура 2</option>
+                        <option value="figure3">Фигура 3</option>
+                        <option value="figure4">Фигура 4</option>
+                        <option value="figure5">Фигура 5</option>
+                        <option value="figure6">Фигура 6</option>
+                    </select>
+                </div>
+                
+                <!-- Стартовый номер и ФИО -->
+                <div class="info-row">
+                    <div class="info-item">
+                        <div class="info-label">СТАРТОВЫЙ НОМЕР</div>
+                        <div class="info-value" id="startNumber">-</div>
+                    </div>
+                    <div class="info-item">
+                        <div class="info-label">ФИО УЧАСТНИКА</div>
+                        <div class="info-value" id="fullName">-</div>
+                    </div>
+                </div>
+                
+                <!-- Балл -->
+                <div class="form-group">
+                    <label>БАЛЛ (1-10)</label>
+                    <div class="score-input-group">
+                        <input type="text" id="scoreInput" placeholder="Введите балл от 1 до 10" autofocus>
+                    </div>
+                </div>
+                
+                <!-- Прогресс -->
+                <div class="progress">
+                    <div class="progress-bar" id="progressBar"></div>
+                </div>
+                <div class="progress-text" id="progressText">Участник 0 из 10</div>
+                
+                <!-- Кнопки -->
+                <div class="button-group">
+                    <button class="submit-btn" id="submitBtn">✅ ОЦЕНИТЬ</button>               
+                    <button class="skip-btn" id="skipBtn">⏭️ ПРОПУСТИТЬ</button>
+                </div>
+                
+                <!-- Статус -->
+                <div class="status" id="statusMessage" style="display: none;"></div>
+                
+                <!-- Кнопка раскрытия списка участников -->
+                <div class="toggle-participants">
+                    <button id="toggleParticipantsBtn" class="toggle-btn">
+                        <i class="fas fa-chevron-down"></i> Показать список участников
+                    </button>
+                </div>
+                
+                <!-- Список участников (скрыт по умолчанию) -->
+                <div class="participants-list" id="participantsListContainer" style="display: none;">
+                    <h3>📋 СПИСОК УЧАСТНИКОВ</h3>
+                    <div id="participantsList"></div>
+                </div>
+            </div>
+        </main>
+
+        <footer>
+            <p>Осталось участников: <span id="remainingCount">10</span> | Оценено: <span id="evaluatedCount">0</span></p>
+        </footer>
+    </div>
+    
+    <!-- Наш JavaScript -->
+    <script src="app.js"></script>
+</body>
+</html>
