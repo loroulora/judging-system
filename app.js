@@ -1175,4 +1175,349 @@ document.addEventListener('DOMContentLoaded', function () {
   }
 
   console.log('✅ Система судейства готова к работе!');
+    // ============================================
+// ТЕСТОВЫЙ МЕНЮ (добавить в конец app.js)
+// ============================================
+
+function addTestMenu() {
+    // Создаем кнопку для открытия тестового меню
+    const testBtn = document.createElement('button');
+    testBtn.innerHTML = '🧪 Тесты';
+    testBtn.style.cssText = `
+        position: fixed;
+        bottom: 20px;
+        right: 20px;
+        z-index: 10000;
+        background: #28a745;
+        color: white;
+        border: none;
+        border-radius: 50%;
+        width: 60px;
+        height: 60px;
+        font-size: 24px;
+        cursor: pointer;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+        transition: all 0.3s;
+    `;
+    testBtn.onmouseenter = () => testBtn.style.transform = 'scale(1.1)';
+    testBtn.onmouseleave = () => testBtn.style.transform = 'scale(1)';
+    
+    document.body.appendChild(testBtn);
+    
+    let testPanel = null;
+    
+    testBtn.onclick = () => {
+        if (testPanel) {
+            document.body.removeChild(testPanel);
+            testPanel = null;
+            return;
+        }
+        
+        testPanel = document.createElement('div');
+        testPanel.style.cssText = `
+            position: fixed;
+            bottom: 90px;
+            right: 20px;
+            width: 300px;
+            background: white;
+            border: 2px solid #28a745;
+            border-radius: 10px;
+            padding: 15px;
+            z-index: 10000;
+            box-shadow: 0 5px 25px rgba(0,0,0,0.15);
+            max-height: 70vh;
+            overflow-y: auto;
+        `;
+        
+        testPanel.innerHTML = `
+            <div style="margin-bottom: 15px; display: flex; justify-content: space-between; align-items: center;">
+                <h3 style="margin: 0; color: #28a745;">🧪 Тесты</h3>
+                <button onclick="this.parentNode.parentNode.remove()" style="background: #dc3545; color: white; border: none; padding: 5px 10px; border-radius: 5px; cursor: pointer;">✕</button>
+            </div>
+            
+            <div style="margin-bottom: 15px;">
+                <button onclick="runQuickTests()" style="background: #17a2b8; color: white; padding: 10px; border: none; border-radius: 5px; width: 100%; margin-bottom: 10px; cursor: pointer;">
+                    🚀 Быстрые тесты
+                </button>
+                
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
+                    <button onclick="testCategory('category1')" style="background: #6c757d; color: white; padding: 8px; border: none; border-radius: 5px; cursor: pointer; font-size: 12px;">
+                        Тест Кат.1
+                    </button>
+                    <button onclick="testCategory('solo')" style="background: #6c757d; color: white; padding: 8px; border: none; border-radius: 5px; cursor: pointer; font-size: 12px;">
+                        Тест Solo
+                    </button>
+                    <button onclick="testValidation()" style="background: #6c757d; color: white; padding: 8px; border: none; border-radius: 5px; cursor: pointer; font-size: 12px;">
+                        Тест валидации
+                    </button>
+                    <button onclick="testStorage()" style="background: #6c757d; color: white; padding: 8px; border: none; border-radius: 5px; cursor: pointer; font-size: 12px;">
+                        Тест хранилища
+                    </button>
+                </div>
+            </div>
+            
+            <div style="background: #f8f9fa; padding: 10px; border-radius: 5px; margin-bottom: 15px;">
+                <h4 style="margin: 0 0 10px 0; font-size: 14px;">Статус системы:</h4>
+                <div id="testStatus" style="font-size: 12px; font-family: monospace;">
+                    Загрузка...
+                </div>
+            </div>
+            
+            <div style="background: #f8f9fa; padding: 10px; border-radius: 5px;">
+                <h4 style="margin: 0 0 10px 0; font-size: 14px;">Лог тестов:</h4>
+                <div id="testLog" style="height: 150px; overflow-y: auto; font-size: 11px; font-family: monospace; background: #1a1a1a; color: #00ff00; padding: 8px; border-radius: 3px;"></div>
+            </div>
+        `;
+        
+        document.body.appendChild(testPanel);
+        
+        // Автоматически проверяем статус системы
+        checkSystemStatus();
+    };
+}
+
+// Функция проверки статуса
+function checkSystemStatus() {
+    const statusDiv = document.getElementById('testStatus');
+    if (!statusDiv) return;
+    
+    const checks = [
+        { name: 'LocalStorage', check: () => typeof localStorage !== 'undefined' },
+        { name: 'DOM готов', check: () => document.readyState === 'complete' },
+        { name: 'Конфигурация', check: () => window.BRIGADES && window.CATEGORIES_WITH_FIGURES },
+        { name: 'API URL', check: () => window.API_URL && window.API_URL.includes('http') },
+        { name: 'Форма загружена', check: () => document.getElementById('judgeSelect') && document.getElementById('categorySelect') }
+    ];
+    
+    let html = '';
+    checks.forEach(check => {
+        const passed = check.check();
+        html += `${passed ? '✅' : '❌'} ${check.name}<br>`;
+    });
+    
+    statusDiv.innerHTML = html;
+}
+
+// Логирование
+function testLog(message, type = 'info') {
+    const logDiv = document.getElementById('testLog');
+    if (!logDiv) {
+        console.log(`[TEST ${type}]`, message);
+        return;
+    }
+    
+    const timestamp = new Date().toLocaleTimeString();
+    const color = type === 'error' ? '#ff4444' : type === 'success' ? '#44ff44' : '#44aaff';
+    logDiv.innerHTML += `<div style="color: ${color}; margin: 2px 0;">[${timestamp}] ${message}</div>`;
+    logDiv.scrollTop = logDiv.scrollHeight;
+}
+
+// Быстрые тесты
+async function runQuickTests() {
+    testLog('🚀 Запуск быстрых тестов...', 'info');
+    
+    const tests = [
+        { name: 'Проверка формы', fn: testFormElements },
+        { name: 'Проверка валидации', fn: testBasicValidation },
+        { name: 'Проверка хранилища', fn: testBasicStorage },
+        { name: 'Проверка конфигурации', fn: testConfiguration }
+    ];
+    
+    for (const test of tests) {
+        testLog(`Тест: ${test.name}`, 'info');
+        try {
+            await test.fn();
+            testLog(`✅ ${test.name} - успешно`, 'success');
+        } catch (error) {
+            testLog(`❌ ${test.name} - ошибка: ${error.message}`, 'error');
+        }
+    }
+    
+    testLog('✅ Быстрые тесты завершены', 'success');
+}
+
+// Тесты
+async function testFormElements() {
+    const requiredElements = [
+        'judgeSelect', 'categorySelect', 'figureSelect', 'brigadeSelect',
+        'scoreInput', 'submitBtn', 'skipBtn', 'sendScoresBtn', 'resetSessionBtn'
+    ];
+    
+    const missing = [];
+    requiredElements.forEach(id => {
+        if (!document.getElementById(id)) {
+            missing.push(id);
+        }
+    });
+    
+    if (missing.length > 0) {
+        throw new Error(`Отсутствуют элементы: ${missing.join(', ')}`);
+    }
+    
+    return true;
+}
+
+async function testBasicValidation() {
+    const scoreInput = document.getElementById('scoreInput');
+    if (!scoreInput) throw new Error('Поле scoreInput не найдено');
+    
+    // Тестируем разные форматы
+    const testCases = [
+        { input: '8.5', shouldPass: true },
+        { input: '8,5', shouldPass: true },
+        { input: '15', shouldPass: false },
+        { input: 'abc', shouldPass: false }
+    ];
+    
+    for (const test of testCases) {
+        scoreInput.value = test.input;
+        scoreInput.dispatchEvent(new Event('input'));
+        
+        // Даем время на валидацию
+        await new Promise(resolve => setTimeout(resolve, 100));
+        
+        const currentValue = scoreInput.value;
+        const numValue = parseFloat(currentValue.replace(',', '.'));
+        const isValid = !isNaN(numValue) && numValue >= 0 && numValue <= 10;
+        
+        if (isValid !== test.shouldPass) {
+            throw new Error(`Валидация не сработала для "${test.input}"`);
+        }
+    }
+    
+    return true;
+}
+
+async function testBasicStorage() {
+    const testKey = 'judging_system_test_' + Date.now();
+    const testValue = { test: true, timestamp: Date.now() };
+    
+    // Запись
+    localStorage.setItem(testKey, JSON.stringify(testValue));
+    
+    // Чтение
+    const retrieved = JSON.parse(localStorage.getItem(testKey));
+    
+    if (!retrieved || retrieved.test !== true) {
+        throw new Error('Ошибка работы с localStorage');
+    }
+    
+    // Очистка
+    localStorage.removeItem(testKey);
+    
+    return true;
+}
+
+async function testConfiguration() {
+    if (!window.BRIGADES || !Array.isArray(window.BRIGADES)) {
+        throw new Error('Конфигурация BRIGADES не загружена');
+    }
+    
+    if (!window.CATEGORIES_WITH_FIGURES || typeof window.CATEGORIES_WITH_FIGURES !== 'object') {
+        throw new Error('Конфигурация CATEGORIES_WITH_FIGURES не загружена');
+    }
+    
+    return true;
+}
+
+// Дополнительные тестовые функции
+async function testCategory(categoryValue) {
+    testLog(`Тестирование категории: ${categoryValue}`, 'info');
+    
+    const categorySelect = document.getElementById('categorySelect');
+    if (!categorySelect) {
+        testLog('❌ Элемент categorySelect не найден', 'error');
+        return;
+    }
+    
+    // Выбираем категорию
+    categorySelect.value = categoryValue;
+    categorySelect.dispatchEvent(new Event('change'));
+    
+    // Ждем обновления
+    await new Promise(resolve => setTimeout(resolve, 500));
+    
+    // Проверяем дополнительные поля
+    const figureGroup = document.getElementById('figureGroup');
+    const brigadeGroup = document.getElementById('brigadeGroup');
+    
+    if (figureGroup && figureGroup.style.display !== 'none') {
+        testLog(`✅ Отображается поле фигур для ${categoryValue}`, 'success');
+    }
+    
+    if (brigadeGroup && brigadeGroup.style.display !== 'none') {
+        testLog(`✅ Отображается поле бригады для ${categoryValue}`, 'success');
+    }
+    
+    testLog(`✅ Тест категории ${categoryValue} завершен`, 'success');
+}
+
+function testValidation() {
+    testLog('Запуск теста валидации...', 'info');
+    
+    // Симулируем невалидный ввод
+    const scoreInput = document.getElementById('scoreInput');
+    const submitBtn = document.getElementById('submitBtn');
+    
+    if (!scoreInput || !submitBtn) {
+        testLog('❌ Не найдены необходимые элементы', 'error');
+        return;
+    }
+    
+    // Тест 1: Пустой ввод
+    scoreInput.value = '';
+    submitBtn.click();
+    
+    // Тест 2: Невалидный ввод
+    scoreInput.value = 'abc';
+    submitBtn.click();
+    
+    // Тест 3: Ввод больше 10
+    scoreInput.value = '15';
+    submitBtn.click();
+    
+    testLog('✅ Тесты валидации отправлены', 'info');
+}
+
+function testStorage() {
+    testLog('Тестирование хранилища...', 'info');
+    
+    // Проверяем наличие ключей
+    const keys = [
+        'judging_system_judge',
+        'judging_system_category',
+        'judging_system_scores_by_category'
+    ];
+    
+    keys.forEach(key => {
+        const value = localStorage.getItem(key);
+        testLog(`${key}: ${value ? '✅ есть данные' : '⚠️ пусто'}`, 'info');
+    });
+    
+    // Тестируем запись
+    const testData = { test: true, timestamp: Date.now() };
+    localStorage.setItem('test_storage', JSON.stringify(testData));
+    
+    const retrieved = JSON.parse(localStorage.getItem('test_storage'));
+    if (retrieved && retrieved.test === true) {
+        testLog('✅ Запись/чтение работает', 'success');
+    } else {
+        testLog('❌ Ошибка записи/чтения', 'error');
+    }
+    
+    localStorage.removeItem('test_storage');
+}
+
+// Инициализация тестового меню при загрузке
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', addTestMenu);
+} else {
+    addTestMenu();
+}
+
+// Экспортируем для доступа из консоли
+window.runQuickTests = runQuickTests;
+window.testCategory = testCategory;
+window.testValidation = testValidation;
+window.testStorage = testStorage;
 });
