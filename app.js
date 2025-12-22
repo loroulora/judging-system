@@ -1,3 +1,10 @@
+// === КОНФИГ БРИГАД ===
+const BRIGADES = [
+    { value: 'execution', text: 'Исполнение' },
+    { value: 'artistic', text: 'Художественное впечатление' },
+    { value: 'difficulty', text: 'Сложность' }
+];
+// === КОНЕЦ КОНФИГА БРИГАД ===
 // === КОНФИГ ФИГУР ===
 const CATEGORIES_WITH_FIGURES = {
     "category1": [
@@ -55,6 +62,7 @@ document.addEventListener('DOMContentLoaded', function () {
     JUDGE: 'judging_system_judge',
     CATEGORY: 'judging_system_category',
     FIGURE: 'judging_system_figure',
+    BRIGADE: 'judging_system_brigade', // ← новое
     CURRENT_INDEX: 'judging_system_current_index',
     PARTICIPANTS: 'judging_system_participants',
 
@@ -73,7 +81,9 @@ document.addEventListener('DOMContentLoaded', function () {
 
   // Категории, где требуется выбор фигуры (по ТЕКСТУ option)
   const categoriesWithFigures = ['Фигуры «Категория 1»', 'Фигуры «10 лет и моложе»', 'Фигуры «12 лет и моложе»'];
-
+  // Категории, где требуется выбор бригады
+  const categoriesWithBrigade = ['Соло', 'Дуэты', 'Группы', 'Комби', 'Трофи'];
+  
   // =========================
   // STATE
   // =========================
@@ -85,6 +95,7 @@ document.addEventListener('DOMContentLoaded', function () {
   let selectedFigure = '';
   let selectedJudge = '';
   let isParticipantsListVisible = false;
+  let selectedBrigade = '';
 
   // Оценки по категориям:
   // scoresByCategory[categoryText][participantId] = {score, judgeId, category, figure, timestamp, isFirstTime}
@@ -100,6 +111,8 @@ document.addEventListener('DOMContentLoaded', function () {
   const categorySelect = document.getElementById('categorySelect');
   const figureGroup = document.getElementById('figureGroup');
   const figureSelect = document.getElementById('figureSelect');
+  const brigadeGroup = document.getElementById('brigadeGroup');
+  const brigadeSelect = document.getElementById('brigadeSelect');
 
   const startNumberElement = document.getElementById('startNumber');
   const fullNameElement = document.getElementById('fullName');
@@ -200,6 +213,7 @@ document.addEventListener('DOMContentLoaded', function () {
       selectedJudge = localStorage.getItem(STORAGE_KEYS.JUDGE) || '';
       selectedCategory = localStorage.getItem(STORAGE_KEYS.CATEGORY) || '';
       selectedFigure = localStorage.getItem(STORAGE_KEYS.FIGURE) || '';
+      selectedBrigade = localStorage.getItem(STORAGE_KEYS.BRIGADE) || ''; // ← новое
 
       const savedIndex = localStorage.getItem(STORAGE_KEYS.CURRENT_INDEX);
       currentIndex = savedIndex ? parseInt(savedIndex, 10) : 0;
@@ -228,6 +242,9 @@ document.addEventListener('DOMContentLoaded', function () {
 
       if (selectedFigure) localStorage.setItem(STORAGE_KEYS.FIGURE, selectedFigure);
       else localStorage.removeItem(STORAGE_KEYS.FIGURE);
+      
+      if (selectedBrigade) localStorage.setItem(STORAGE_KEYS.BRIGADE, selectedBrigade);
+      else localStorage.removeItem(STORAGE_KEYS.BRIGADE);
 
       localStorage.setItem(STORAGE_KEYS.CURRENT_INDEX, String(currentIndex));
 
@@ -242,6 +259,8 @@ document.addEventListener('DOMContentLoaded', function () {
 
   function resetAll() {
     Object.values(STORAGE_KEYS).forEach((k) => localStorage.removeItem(k));
+    const newCategoryText = categorySelect.options[categorySelect.selectedIndex].text;
+    selectedCategory = newCategoryText;
 
     scoresByCategory = {};
 
@@ -252,6 +271,7 @@ document.addEventListener('DOMContentLoaded', function () {
     selectedJudge = '';
     selectedCategory = '';
     selectedFigure = '';
+    selectedBrigade = ''; // ← добавить
     currentIndex = 0;
     participants = [];
     judges = [];
@@ -259,6 +279,16 @@ document.addEventListener('DOMContentLoaded', function () {
     isAutoSending = false;
     autoSendTimer && clearTimeout(autoSendTimer);
     autoSendTimer = null;
+    // БРИГАДА: сбрасываем и скрываем/показываем
+    selectedBrigade = '';
+    brigadeSelect.value = '';
+    localStorage.removeItem(STORAGE_KEYS.BRIGADE);
+    
+    if (categoriesWithBrigade.includes(selectedCategory)) {
+        brigadeGroup.style.display = 'block';
+    } else {
+        brigadeGroup.style.display = 'none';
+    }
   }
 
   // =========================
@@ -570,33 +600,12 @@ document.addEventListener('DOMContentLoaded', function () {
       selectedFigure = figureSelect.value;
       localStorage.setItem(STORAGE_KEYS.FIGURE, selectedFigure);
     });
-          // Кастомная клавиатура
-      const customKeyboard = document.getElementById('customKeyboard');
-      const toggleKeyboardBtn = document.getElementById('toggleKeyboardBtn');
-
-      toggleKeyboardBtn.addEventListener('click', function() {
-          if (customKeyboard.style.display === 'none') {
-              customKeyboard.style.display = 'block';
-              this.innerHTML = '<i class="fas fa-keyboard"></i> Скрыть клавиатуру';
-          } else {
-              customKeyboard.style.display = 'none';
-              this.innerHTML = '<i class="fas fa-keyboard"></i> Показать клавиатуру';
-          }
-      });
-
-      document.querySelectorAll('.keyboard-btn').forEach(btn => {
-          btn.addEventListener('click', function() {
-              const value = this.getAttribute('data-value');
-              if (value === ',') {
-                  if (!scoreInput.value.includes(',')) scoreInput.value += ',';
-              } else if (this.id === 'keyboardBackspace') {
-                  scoreInput.value = scoreInput.value.slice(0, -1);
-              } else {
-                  scoreInput.value += value;
-              }
-              scoreInput.dispatchEvent(new Event('input'));
-          });
-      });
+    
+    brigadeSelect.addEventListener('change', () => {
+    selectedBrigade = brigadeSelect.value;
+    localStorage.setItem(STORAGE_KEYS.BRIGADE, selectedBrigade);
+    });
+      
     scoreInput.addEventListener('input', function() {
         if (this.value.includes('.')) {
             this.value = this.value.replace('.', ',');
@@ -628,7 +637,7 @@ document.addEventListener('DOMContentLoaded', function () {
     '!', '@', '#', '$', '%', '^', '&', '*', '(', ')', 
     '-', '_', '=', '+', '[', ']', '{', '}', '"', "'", 
     '?', '<', '>', '`', '~'
-];
+    ];
     
     // Проверяем и заменяем каждый символ
     symbolsToReplace.forEach(symbol => {
@@ -636,21 +645,6 @@ document.addEventListener('DOMContentLoaded', function () {
             this.value = this.value.replace(symbol, ',');
         }
     });
-    });
-
-    // Валидация при потере фокуса
-    scoreInput.addEventListener('blur', function() {
-        let value = this.value.replace(',', '.'); // Временно для вычислений
-        const numValue = parseFloat(value);
-        
-        if (!isNaN(numValue)) {
-            // Ограничиваем 0-10
-            let corrected = Math.max(0, Math.min(10, numValue));
-            // Округляем до одного знака
-            corrected = Math.round(corrected * 10) / 10;
-            // Возвращаем запятую
-            this.value = corrected.toString().replace('.', ',');
-        }
     });
 
     // Валидация при потере фокуса
@@ -695,6 +689,61 @@ document.addEventListener('DOMContentLoaded', function () {
         showStatus('✅ Сессия сброшена', 'info', 1500);
       });
     }
+    
+    // === ВСТАВЬТЕ ЗДЕСЬ, ПЕРЕД ЗАКРЫВАЮЩЕЙ СКОБКОЙ ===
+    // =========================
+    // КАСТОМНАЯ КЛАВИАТУРА
+    // =========================
+        // =========================
+    // КАСТОМНАЯ КЛАВИАТУРА (ПРОСТОЙ ВАРИАНТ)
+    // =========================
+    const customKeyboard = document.getElementById('customKeyboard');
+    const toggleKeyboardBtn = document.getElementById('toggleKeyboardBtn');
+    
+    // Показать/скрыть клавиатуру
+    toggleKeyboardBtn.addEventListener('click', function() {
+        if (customKeyboard.style.display === 'none') {
+            customKeyboard.style.display = 'block';
+            this.innerHTML = '<i class="fas fa-keyboard"></i> Скрыть клавиатуру';
+        } else {
+            customKeyboard.style.display = 'none';
+            this.innerHTML = '<i class="fas fa-keyboard"></i> Показать клавиатуру';
+        }
+    });
+    
+    // Обработка нажатий кнопок клавиатуры
+    document.querySelectorAll('.keyboard-btn').forEach(btn => {
+        btn.addEventListener('click', function() {
+            const value = this.getAttribute('data-value');
+            const scoreInput = document.getElementById('scoreInput');
+            
+            // Просто добавляем значение
+            if (value === ',') {
+                if (!scoreInput.value.includes(',')) {
+                    scoreInput.value += ',';
+                }
+            } else if (this.id === 'keyboardBackspace') {
+                scoreInput.value = scoreInput.value.slice(0, -1);
+            } else {
+                scoreInput.value += value;
+            }
+            
+            // Запускаем событие input для валидации
+            scoreInput.dispatchEvent(new Event('input'));
+        });
+    });
+    
+    // Автоматически показывать клавиатуру при фокусе на поле ввода
+    scoreInput.addEventListener('focus', function() {
+        // Раскомментируйте, если хотите автоматическое открытие
+        if (customKeyboard.style.display === 'none' || customKeyboard.style.display === '') {
+            customKeyboard.style.display = 'block';
+            toggleKeyboardBtn.innerHTML = '<i class="fas fa-keyboard"></i> Скрыть клавиатуру';
+            toggleKeyboardBtn.style.background = 'linear-gradient(145deg, #28a745, #218838)';
+        }
+    });
+    // === КОНЕЦ КОДА КЛАВИАТУРЫ ===
+    
 
     window.addEventListener('beforeunload', (e) => {
       // если где-то есть локальные оценки — предупреждаем
@@ -704,6 +753,7 @@ document.addEventListener('DOMContentLoaded', function () {
         e.returnValue = 'У вас есть несохраненные оценки. Выйти?';
       }
     });
+    
   }
 
   async function handleCategoryChange() {
@@ -720,6 +770,16 @@ document.addEventListener('DOMContentLoaded', function () {
       figureGroup.style.display = 'block';
     } else {
       figureGroup.style.display = 'none';
+    }
+    // БРИГАДА: сбрасываем и скрываем/показываем
+    selectedBrigade = '';
+    brigadeSelect.value = '';
+    localStorage.removeItem(STORAGE_KEYS.BRIGADE);
+    
+    if (categoriesWithBrigade.includes(selectedCategory)) {
+        brigadeGroup.style.display = 'block';
+    } else {
+        brigadeGroup.style.display = 'none';
     }
 
     const selectedCategoryValue = categorySelect.value;
@@ -770,6 +830,12 @@ document.addEventListener('DOMContentLoaded', function () {
     if (categoriesWithFigures.includes(selectedCategory) && !selectedFigure) {
         showStatus('⚠️ Выберите фигуру!', 'error', 2500);
         figureSelect.focus();
+        return false;
+    }
+    // Проверка бригады (НОВОЕ)
+    if (categoriesWithBrigade.includes(selectedCategory) && !selectedBrigade) {
+        showStatus('⚠️ Выберите бригаду!', 'error', 2500);
+        brigadeSelect.focus();
         return false;
     }
     
@@ -880,6 +946,10 @@ document.addEventListener('DOMContentLoaded', function () {
       const figureText = figureSelect.options[figureSelect.selectedIndex]?.text;
       msg += `<strong>Фигура:</strong> ${figureText}<br>`;
     }
+    if (selectedBrigade) {
+      const brigadeText = brigadeSelect.options[brigadeSelect.selectedIndex]?.text;
+      msg += `<strong>Бригада:</strong> ${brigadeText}<br>`;
+    }
     msg += `<strong>Балл:</strong> ${score}`;
 
     showConfirmationDialog(msg, (confirmed) => {
@@ -956,6 +1026,15 @@ document.addEventListener('DOMContentLoaded', function () {
         figure: selectedFigure || '',
         timestamp: Date.now(),
         // Отмечаем, была ли оценка уже введена ранее
+        isFirstTime: isFirstTime
+    };
+    map[String(participantId)] = {
+        score,
+        judgeId: selectedJudge,
+        category: categoryText,
+        figure: selectedFigure || '',
+        brigade: selectedBrigade || '', // ← новое поле
+        timestamp: Date.now(),
         isFirstTime: isFirstTime
     };
 
