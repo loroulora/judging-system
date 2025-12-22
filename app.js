@@ -570,7 +570,33 @@ document.addEventListener('DOMContentLoaded', function () {
       selectedFigure = figureSelect.value;
       localStorage.setItem(STORAGE_KEYS.FIGURE, selectedFigure);
     });
-    
+          // Кастомная клавиатура
+      const customKeyboard = document.getElementById('customKeyboard');
+      const toggleKeyboardBtn = document.getElementById('toggleKeyboardBtn');
+
+      toggleKeyboardBtn.addEventListener('click', function() {
+          if (customKeyboard.style.display === 'none') {
+              customKeyboard.style.display = 'block';
+              this.innerHTML = '<i class="fas fa-keyboard"></i> Скрыть клавиатуру';
+          } else {
+              customKeyboard.style.display = 'none';
+              this.innerHTML = '<i class="fas fa-keyboard"></i> Показать клавиатуру';
+          }
+      });
+
+      document.querySelectorAll('.keyboard-btn').forEach(btn => {
+          btn.addEventListener('click', function() {
+              const value = this.getAttribute('data-value');
+              if (value === ',') {
+                  if (!scoreInput.value.includes(',')) scoreInput.value += ',';
+              } else if (this.id === 'keyboardBackspace') {
+                  scoreInput.value = scoreInput.value.slice(0, -1);
+              } else {
+                  scoreInput.value += value;
+              }
+              scoreInput.dispatchEvent(new Event('input'));
+          });
+      });
     scoreInput.addEventListener('input', function() {
         if (this.value.includes('.')) {
             this.value = this.value.replace('.', ',');
