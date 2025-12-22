@@ -80,7 +80,17 @@
                         <!-- Заполнится из config.js -->
                     </select>
                 </div>
-                
+
+                <!-- Выбор бригады (скрыт по умолчанию) -->
+                <div class="form-group" id="brigadeGroup" style="display: none;">
+                    <label>ВЫБЕРИТЕ БРИГАДУ</label>
+                    <select id="brigadeSelect">
+                        <option value="">-- Выберите бригаду --</option>
+                        <option value="execution">Исполнение</option>
+                        <option value="artistic">Художественное впечатление</option>
+                        <option value="difficulty">Сложность</option>
+                    </select>
+                </div>
                 <!-- Стартовый номер и ФИО -->
                 <div class="info-row">
                     <div class="info-item">
@@ -106,6 +116,40 @@
                     <div class="progress-bar" id="progressBar"></div>
                 </div>
                 <div class="progress-text" id="progressText">Участник 0 из 0</div>
+                
+                <!-- === КЛАВИАТУРА СЮДА === -->
+                <!-- Кнопка показа/скрытия клавиатуры -->
+                <button id="toggleKeyboardBtn" style="margin-top: 10px; padding: 10px; background: #6c757d; color: white; border: none; border-radius: 5px; width: 100%; cursor: pointer;">
+                    <i class="fas fa-keyboard"></i> Показать клавиатуру
+                </button>
+                
+                <!-- Кастомная клавиатура -->
+                <div class="custom-keyboard" id="customKeyboard" style="display: none;">
+                    <div class="keyboard-row">
+                        <button class="keyboard-btn" data-value="7">7</button>
+                        <button class="keyboard-btn" data-value="8">8</button>
+                        <button class="keyboard-btn" data-value="9">9</button>
+                    </div>
+                    <div class="keyboard-row">
+                        <button class="keyboard-btn" data-value="4">4</button>
+                        <button class="keyboard-btn" data-value="5">5</button>
+                        <button class="keyboard-btn" data-value="6">6</button>
+                    </div>
+                    <div class="keyboard-row">
+                        <button class="keyboard-btn" data-value="1">1</button>
+                        <button class="keyboard-btn" data-value="2">2</button>
+                        <button class="keyboard-btn" data-value="3">3</button>
+                    </div>
+                    <div class="keyboard-row">
+                        <button class="keyboard-btn" data-value="0">0</button>
+                        <button class="keyboard-btn" data-value=",">,</button>
+                        <button class="keyboard-btn" id="keyboardBackspace">
+                            <i class="fas fa-backspace"></i>
+                        </button>
+                    </div>
+                </div>
+                <!-- === КОНЕЦ КЛАВИАТУРЫ === -->
+                
                 
                 <!-- Кнопки -->
                 <div class="button-group">
@@ -133,39 +177,7 @@
                     <div id="participantsList"></div>
                 </div>
                 
-                <!-- === ВСТАВЬТЕ КЛАВИАТУРУ ЗДЕСЬ === -->
-                <!-- Кастомная клавиатура -->
-                <div class="custom-keyboard" id="customKeyboard" style="display: none;">
-                    <div class="keyboard-row">
-                        <button class="keyboard-btn" data-value="7">7</button>
-                        <button class="keyboard-btn" data-value="8">8</button>
-                        <button class="keyboard-btn" data-value="9">9</button>
-                    </div>
-                    <div class="keyboard-row">
-                        <button class="keyboard-btn" data-value="4">4</button>
-                        <button class="keyboard-btn" data-value="5">5</button>
-                        <button class="keyboard-btn" data-value="6">6</button>
-                    </div>
-                    <div class="keyboard-row">
-                        <button class="keyboard-btn" data-value="1">1</button>
-                        <button class="keyboard-btn" data-value="2">2</button>
-                        <button class="keyboard-btn" data-value="3">3</button>
-                    </div>
-                    <div class="keyboard-row">
-                        <button class="keyboard-btn" data-value="0">0</button>
-                        <button class="keyboard-btn" data-value=",">,</button>
-                        <button class="keyboard-btn" id="keyboardBackspace">
-                            <i class="fas fa-backspace"></i>
-                        </button>
-                    </div>
-                </div>
-
-                <button id="toggleKeyboardBtn" style="margin-top: 10px; padding: 10px; background: #6c757d; color: white; border: none; border-radius: 5px; width: 100%; cursor: pointer;">
-                    <i class="fas fa-keyboard"></i> Показать клавиатуру
-                </button>
-                <!-- === КОНЕЦ КЛАВИАТУРЫ === -->
-                
-            </div> <!-- Закрывающий div для .card -->
+            </div>
         </main>
 
         <footer>
