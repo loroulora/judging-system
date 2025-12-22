@@ -644,52 +644,102 @@ footer span {
         justify-content: center;
     }
 }
+/* ========================= */
+/* КАСТОМНАЯ КЛАВИАТУРА (НОВЫЕ СТИЛИ) */
+/* ========================= */
 .custom-keyboard {
-    background: #f8f9fa;
+    background: linear-gradient(145deg, #f0f0f0, #ffffff);
     padding: 15px;
-    border-radius: 10px;
-    border: 2px solid #dee2e6;
-    margin-top: 20px;
+    border-radius: 12px;
+    border: 2px solid #007bff;
+    margin: 15px 0;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
     display: none; /* Скрыта по умолчанию */
 }
 
 .keyboard-row {
     display: flex;
     justify-content: center;
-    gap: 10px;
-    margin-bottom: 10px;
+    gap: 8px;
+    margin-bottom: 8px;
 }
 
 .keyboard-btn {
-    width: 60px;
-    height: 50px;
-    font-size: 20px;
+    width: 65px;
+    height: 55px;
+    font-size: 22px;
     font-weight: bold;
     background: white;
     border: 2px solid #007bff;
-    border-radius: 8px;
+    border-radius: 10px;
     cursor: pointer;
     transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #333;
 }
 
 .keyboard-btn:hover {
     background: #007bff;
     color: white;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0, 123, 255, 0.3);
+}
+
+.keyboard-btn:active {
+    transform: translateY(0);
 }
 
 #keyboardBackspace {
-    background: #dc3545;
+    background: #ff4757;
     color: white;
-    border-color: #dc3545;
+    border-color: #ff4757;
+    font-size: 18px;
+}
+
+#keyboardBackspace:hover {
+    background: #ff3742;
+    border-color: #ff3742;
 }
 
 #toggleKeyboardBtn {
     width: 100%;
     margin-top: 10px;
-    padding: 10px;
-    background: #6c757d;
+    padding: 12px;
+    background: linear-gradient(145deg, #6c757d, #5a6268);
     color: white;
     border: none;
-    border-radius: 5px;
+    border-radius: 8px;
     cursor: pointer;
+    font-size: 16px;
+    font-weight: 600;
+    transition: all 0.3s;
+}
+
+#toggleKeyboardBtn:hover {
+    background: linear-gradient(145deg, #5a6268, #4e555b);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+/* Адаптивность для мобильных */
+@media (max-width: 768px) {
+    .keyboard-btn {
+        width: 55px;
+        height: 50px;
+        font-size: 20px;
+    }
+    
+    .keyboard-row {
+        gap: 6px;
+    }
+}
+
+@media (max-width: 480px) {
+    .keyboard-btn {
+        width: 50px;
+        height: 45px;
+        font-size: 18px;
+    }
 }
