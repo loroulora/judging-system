@@ -571,10 +571,59 @@ document.addEventListener('DOMContentLoaded', function () {
       localStorage.setItem(STORAGE_KEYS.FIGURE, selectedFigure);
     });
     
-    // ТОЧКУ меняем на ЗАПЯТУЮ при вводе
     scoreInput.addEventListener('input', function() {
         if (this.value.includes('.')) {
             this.value = this.value.replace('.', ',');
+        }
+        // if (this.value.includes('ю')) {
+        //     this.value = this.value.replace('ю', ',');          
+        // }
+      // Список всех символов, которые могут быть введены вместо запятой
+    const symbolsToReplace = [
+    '.', ';', ':', '/', '\\', '|',
+    
+    // Все русские буквы строчные
+    'а', 'б', 'в', 'г', 'д', 'е', 'ё', 'ж', 'з', 'и', 'й', 'к', 'л', 'м', 'н', 'о', 'п', 
+    'р', 'с', 'т', 'у', 'ф', 'х', 'ц', 'ч', 'ш', 'щ', 'ъ', 'ы', 'ь', 'э', 'ю', 'я',
+    
+    // Все русские буквы прописные
+    'А', 'Б', 'В', 'Г', 'Д', 'Е', 'Ё', 'Ж', 'З', 'И', 'Й', 'К', 'Л', 'М', 'Н', 'О', 'П',
+    'Р', 'С', 'Т', 'У', 'Ф', 'Х', 'Ц', 'Ч', 'Ш', 'Щ', 'Ъ', 'Ы', 'Ь', 'Э', 'Ю', 'Я',
+    
+    // Английские буквы строчные
+    'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm',
+    'n', 'o', 'p', 'q', 'r', 's', 't', 'u', 'v', 'w', 'x', 'y', 'z',
+    
+    // Английские буквы прописные
+    'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M',
+    'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z',
+    
+    // Спецсимволы
+    '!', '@', '#', '$', '%', '^', '&', '*', '(', ')', 
+    '-', '_', '=', '+', '[', ']', '{', '}', '"', "'", 
+    '?', '<', '>', '`', '~'
+];
+    
+    // Проверяем и заменяем каждый символ
+    symbolsToReplace.forEach(symbol => {
+        if (this.value.includes(symbol)) {
+            this.value = this.value.replace(symbol, ',');
+        }
+    });
+    });
+
+    // Валидация при потере фокуса
+    scoreInput.addEventListener('blur', function() {
+        let value = this.value.replace(',', '.'); // Временно для вычислений
+        const numValue = parseFloat(value);
+        
+        if (!isNaN(numValue)) {
+            // Ограничиваем 0-10
+            let corrected = Math.max(0, Math.min(10, numValue));
+            // Округляем до одного знака
+            corrected = Math.round(corrected * 10) / 10;
+            // Возвращаем запятую
+            this.value = corrected.toString().replace('.', ',');
         }
     });
 
