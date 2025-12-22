@@ -259,9 +259,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
   function resetAll() {
     Object.values(STORAGE_KEYS).forEach((k) => localStorage.removeItem(k));
-    const newCategoryText = categorySelect.options[categorySelect.selectedIndex].text;
-    selectedCategory = newCategoryText;
-
+    
     scoresByCategory = {};
 
     cache.judges = null;
@@ -271,7 +269,7 @@ document.addEventListener('DOMContentLoaded', function () {
     selectedJudge = '';
     selectedCategory = '';
     selectedFigure = '';
-    selectedBrigade = ''; // ← добавить
+    selectedBrigade = '';
     currentIndex = 0;
     participants = [];
     judges = [];
@@ -279,17 +277,11 @@ document.addEventListener('DOMContentLoaded', function () {
     isAutoSending = false;
     autoSendTimer && clearTimeout(autoSendTimer);
     autoSendTimer = null;
-    // БРИГАДА: сбрасываем и скрываем/показываем
-    selectedBrigade = '';
-    brigadeSelect.value = '';
-    localStorage.removeItem(STORAGE_KEYS.BRIGADE);
     
-    if (categoriesWithBrigade.includes(selectedCategory)) {
-        brigadeGroup.style.display = 'block';
-    } else {
-        brigadeGroup.style.display = 'none';
-    }
-  }
+    // Сбрасываем UI элементы
+    if (brigadeSelect) brigadeSelect.value = '';
+    if (brigadeGroup) brigadeGroup.style.display = 'none';
+}
 
   // =========================
   // DATA: Judges / Participants
@@ -1019,15 +1011,6 @@ document.addEventListener('DOMContentLoaded', function () {
     // Определяем, это первая оценка или изменение существующей
     const isFirstTime = !existing;
     
-    map[String(participantId)] = {
-        score,
-        judgeId: selectedJudge,
-        category: categoryText,
-        figure: selectedFigure || '',
-        timestamp: Date.now(),
-        // Отмечаем, была ли оценка уже введена ранее
-        isFirstTime: isFirstTime
-    };
     map[String(participantId)] = {
         score,
         judgeId: selectedJudge,
