@@ -1,5 +1,5 @@
 window.APP_CONFIG = {
-    API_URL: 'https://script.google.com/macros/s/AKfycbwLGtk5t5mK-CwR7hEKcYlIDM6R6JqIv1NeKsAztDBTK7zewiLQjbLyxk2CHU3DGqZx/exec',
+    API_URL: 'https://script.google.com/macros/s/AKfycbyO4MXymmhXZoNnDa1Sxss2sVsi4gQLhPLWT8MJfUZuAHb8k2t5B24MomehklkLKBsU/exec',
     APP_NAME: 'Система судейства',
     VERSION: '1.0.0'
 };
