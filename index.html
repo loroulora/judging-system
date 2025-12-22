@@ -132,7 +132,40 @@
                     <h3>📋 СПИСОК УЧАСТНИКОВ</h3>
                     <div id="participantsList"></div>
                 </div>
-            </div>
+                
+                <!-- === ВСТАВЬТЕ КЛАВИАТУРУ ЗДЕСЬ === -->
+                <!-- Кастомная клавиатура -->
+                <div class="custom-keyboard" id="customKeyboard" style="display: none;">
+                    <div class="keyboard-row">
+                        <button class="keyboard-btn" data-value="7">7</button>
+                        <button class="keyboard-btn" data-value="8">8</button>
+                        <button class="keyboard-btn" data-value="9">9</button>
+                    </div>
+                    <div class="keyboard-row">
+                        <button class="keyboard-btn" data-value="4">4</button>
+                        <button class="keyboard-btn" data-value="5">5</button>
+                        <button class="keyboard-btn" data-value="6">6</button>
+                    </div>
+                    <div class="keyboard-row">
+                        <button class="keyboard-btn" data-value="1">1</button>
+                        <button class="keyboard-btn" data-value="2">2</button>
+                        <button class="keyboard-btn" data-value="3">3</button>
+                    </div>
+                    <div class="keyboard-row">
+                        <button class="keyboard-btn" data-value="0">0</button>
+                        <button class="keyboard-btn" data-value=",">,</button>
+                        <button class="keyboard-btn" id="keyboardBackspace">
+                            <i class="fas fa-backspace"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <button id="toggleKeyboardBtn" style="margin-top: 10px; padding: 10px; background: #6c757d; color: white; border: none; border-radius: 5px; width: 100%; cursor: pointer;">
+                    <i class="fas fa-keyboard"></i> Показать клавиатуру
+                </button>
+                <!-- === КОНЕЦ КЛАВИАТУРЫ === -->
+                
+            </div> <!-- Закрывающий div для .card -->
         </main>
 
         <footer>
