@@ -179,6 +179,30 @@ button {
     color: white;
 }
 
+/* Добавьте после стилей для .skip-btn */
+.send-btn {
+    background: linear-gradient(135deg, #007bff, #17a2b8);
+    color: white;
+}
+
+.send-btn:hover:not(:disabled) {
+    transform: translateY(-2px);
+    box-shadow: 0 5px 15px rgba(0, 123, 255, 0.2);
+}
+
+/* Стили для уведомления о локальных оценках */
+.notification-badge {
+    display: inline-block;
+    background: #ff9800;
+    color: white;
+    font-size: 12px;
+    font-weight: bold;
+    padding: 2px 8px;
+    border-radius: 12px;
+    margin-left: 8px;
+    animation: pulse 1.5s infinite;
+}
+
 button:hover:not(:disabled) {
     transform: translateY(-2px);
     box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
@@ -619,30 +643,4 @@ footer span {
         width: 100%;
         justify-content: center;
     }
-}
-
-/* ДОБАВЬ ЭТО В КОНЕЦ ФАЙЛА: */
-
-.status.info {
-    background: #4CAF50 !important;
-    color: white !important;
-    font-weight: bold;
-    padding: 15px;
-    border-radius: 8px;
-    animation: pulse 2s infinite;
-}
-
-@keyframes pulse {
-    0% { box-shadow: 0 0 0 0 rgba(76, 175, 80, 0.7); }
-    70% { box-shadow: 0 0 0 10px rgba(76, 175, 80, 0); }
-    100% { box-shadow: 0 0 0 0 rgba(76, 175, 80, 0); }
-}
-
-.local-badge {
-    background: #ff9800;
-    color: white;
-    font-size: 11px;
-    padding: 1px 6px;
-    border-radius: 3px;
-    margin-left: 8px;
 }
