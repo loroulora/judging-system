@@ -4,34 +4,39 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Система судейства</title>
-    <!-- Добавляем иконки Font Awesome для кнопки редактирования -->
+    
+    <!-- ФАЙЛ СТИЛЕЙ (ВАЖНО!) -->
+    <link rel="stylesheet" href="style.css">
+    
+    <!-- Font Awesome -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
- <!-- Добавьте этот стиль в <head> -->
-<style>
-.status.info {
-    background: #4CAF50 !important;
-    color: white !important;
-    font-weight: bold;
-    padding: 15px;
-    border-radius: 8px;
-    animation: pulse 2s infinite;
-}
-
-@keyframes pulse {
-    0% { box-shadow: 0 0 0 0 rgba(76, 175, 80, 0.7); }
-    70% { box-shadow: 0 0 0 10px rgba(76, 175, 80, 0); }
-    100% { box-shadow: 0 0 0 0 rgba(76, 175, 80, 0); }
-}
-
-.local-badge {
-    background: #ff9800;
-    color: white;
-    font-size: 11px;
-    padding: 1px 6px;
-    border-radius: 3px;
-    margin-left: 8px;
-}
-</style>
+    
+    <!-- Встроенные стили -->
+    <style>
+    .status.info {
+        background: #4CAF50 !important;
+        color: white !important;
+        font-weight: bold;
+        padding: 15px;
+        border-radius: 8px;
+        animation: pulse 2s infinite;
+    }
+    
+    @keyframes pulse {
+        0% { box-shadow: 0 0 0 0 rgba(76, 175, 80, 0.7); }
+        70% { box-shadow: 0 0 0 10px rgba(76, 175, 80, 0); }
+        100% { box-shadow: 0 0 0 0 rgba(76, 175, 80, 0); }
+    }
+    
+    .local-badge {
+        background: #ff9800;
+        color: white;
+        font-size: 11px;
+        padding: 1px 6px;
+        border-radius: 3px;
+        margin-left: 8px;
+    }
+    </style>
 </head>
 <body>
     <div class="container">
@@ -61,9 +66,9 @@
                         <option value="under12">Фигуры «12 лет и моложе»</option>
                         <option value="solo">Соло</option>
                         <option value="duets">Дуэты</option>
-                        <option value="duets">Группы</option>
-                        <option value="duets">Комби</option>
-                        <option value="duets">Трофи</option>
+                        <option value="groups">Группы</option>
+                        <option value="combi">Комби</option>
+                        <option value="trophy">Трофи</option>
                     </select>
                 </div>
                 
@@ -72,12 +77,7 @@
                     <label>ВЫБЕРИТЕ ФИГУРУ</label>
                     <select id="figureSelect">
                         <option value="">-- Выберите фигуру --</option>
-                        <option value="figure1">Фигура 1</option>
-                        <option value="figure2">Фигура 2</option>
-                        <option value="figure3">Фигура 3</option>
-                        <option value="figure4">Фигура 4</option>
-                        <option value="figure5">Фигура 5</option>
-                        <option value="figure6">Фигура 6</option>
+                        <!-- Заполнится из config.js -->
                     </select>
                 </div>
                 
@@ -95,9 +95,9 @@
                 
                 <!-- Балл -->
                 <div class="form-group">
-                    <label>БАЛЛ (1-10)</label>
+                    <label>БАЛЛ (0-10)</label>
                     <div class="score-input-group">
-                        <input type="text" id="scoreInput" placeholder="Введите балл от 1 до 10" autofocus>
+                        <input type="text" id="scoreInput" placeholder="Введите балл от 0 до 10" autofocus>
                     </div>
                 </div>
                 
@@ -105,7 +105,7 @@
                 <div class="progress">
                     <div class="progress-bar" id="progressBar"></div>
                 </div>
-                <div class="progress-text" id="progressText">Участник 0 из 10</div>
+                <div class="progress-text" id="progressText">Участник 0 из 0</div>
                 
                 <!-- Кнопки -->
                 <div class="button-group">
@@ -113,8 +113,8 @@
                     <button class="skip-btn" id="skipBtn">⏭️ ПРОПУСТИТЬ</button>
                     <button class="send-btn" id="sendScoresBtn" style="display: none;">📤 ОТПРАВИТЬ ОЦЕНКИ</button>
                     <button id="resetSessionBtn" type="button" class="btn btn-danger">
-                  Сбросить сессию
-                </button>
+                        Сбросить сессию
+                    </button>
                 </div>
                 
                 <!-- Статус -->
@@ -136,8 +136,12 @@
         </main>
 
         <footer>
-            <p>Осталось участников: <span id="remainingCount">10</span> | Оценено: <span id="evaluatedCount">0</span></p>
+            <p>Осталось участников: <span id="remainingCount">0</span> | Оценено: <span id="evaluatedCount">0</span></p>
         </footer>
     </div>
+    
+    <!-- ПОДКЛЮЧЕНИЕ JS ФАЙЛОВ (ВАЖНО!) -->
+    <script src="config.js"></script>
+    <script src="app.js"></script>
 </body>
 </html>
