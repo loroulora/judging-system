@@ -1,8 +1,8 @@
 // === КОНФИГ БРИГАД ===
 const BRIGADES = [
-    { value: 'execution', text: 'Исполнение' },
-    { value: 'artistic', text: 'Художественное впечатление' },
-    { value: 'difficulty', text: 'Сложность' }
+    { value: 'Исполнение', text: 'Исполнение' },
+    { value: 'Художественное впечатление', text: 'Художественное впечатление' },
+    { value: 'Сложность', text: 'Сложность' }
 ];
 // === КОНЕЦ КОНФИГА БРИГАД ===
 // === КОНФИГ ФИГУР ===
@@ -1135,7 +1135,8 @@ document.addEventListener('DOMContentLoaded', function () {
             judgeId: s.judgeId,
             score: s.score,
             category: s.category,
-            figure: s.figure,
+            // figure: s.figure,
+            figure: categoriesWithBrigade.includes(s.category) ? s.brigade : s.figure,
             timestamp: s.timestamp,
             // Определяем статус на основе isFirstTime
             status: s.isFirstTime ? 'Новая' : 'Измененная'
