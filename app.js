@@ -62,28 +62,25 @@ document.addEventListener('DOMContentLoaded', function () {
     JUDGE: 'judging_system_judge',
     CATEGORY: 'judging_system_category',
     FIGURE: 'judging_system_figure',
-    BRIGADE: 'judging_system_brigade', // ← новое
+    BRIGADE: 'judging_system_brigade',
     CURRENT_INDEX: 'judging_system_current_index',
     PARTICIPANTS: 'judging_system_participants',
-
-    // ВАЖНО: теперь оценки храним по категориям
     SCORES_BY_CATEGORY: 'judging_system_scores_by_category',
   };
 
-  // Кеш (можно выключить при дебаге)
+  // Кеш
   const cache = {
     enabled: true,
     judges: null,
-    participants: {}, // categoryText -> participants[]
+    participants: {},
     lastCacheTime: { judges: 0, participants: {} },
     ttl: 5 * 60 * 1000,
   };
 
-  // Категории, где требуется выбор фигуры (по ТЕКСТУ option)
+  // Категории, где требуется выбор фигуры
   const categoriesWithFigures = ['Фигуры «Категория 1»', 'Фигуры «10 лет и моложе»', 'Фигуры «12 лет и моложе»'];
   // Категории, где требуется выбор бригады
   const categoriesWithBrigade = [
-    // 'Соло',
     'Дуэты',
     'Группы',
     'Комби', 
@@ -108,9 +105,8 @@ document.addEventListener('DOMContentLoaded', function () {
   let isParticipantsListVisible = false;
   let selectedBrigade = '';
 
-  // Оценки по категориям:
-  // scoresByCategory[categoryText][participantId] = {score, judgeId, category, figure, timestamp, isFirstTime}
-  let scoresByCategory = {}; // plain object для удобного хранения в localStorage
+  // Оценки по категориям (теперь используется только для резервного копирования)
+  let scoresByCategory = {};
 
   let isAutoSending = false;
   let autoSendTimer = null;
@@ -131,7 +127,7 @@ document.addEventListener('DOMContentLoaded', function () {
   const scoreInput = document.getElementById('scoreInput');
   const submitBtn = document.getElementById('submitBtn');
   const skipBtn = document.getElementById('skipBtn');
-  const sendScoresBtn = document.getElementById('sendScoresBtn');
+  const sendScoresBtn = document.getElementById('sendScoresBtn'); // Оставляем для отправки оставшихся
 
   const statusMessage = document.getElementById('statusMessage');
   const progressBar = document.getElementById('progressBar');
@@ -147,7 +143,7 @@ document.addEventListener('DOMContentLoaded', function () {
   const resetSessionBtn = document.getElementById('resetSessionBtn');
 
   // =========================
-  // API HELPER (POST form-urlencoded)
+  // API HELPER
   // =========================
   async function apiRequest(action, params = {}, timeoutMs = 45000) {
     const body = new URLSearchParams({ action, ...params });
@@ -224,7 +220,7 @@ document.addEventListener('DOMContentLoaded', function () {
       selectedJudge = localStorage.getItem(STORAGE_KEYS.JUDGE) || '';
       selectedCategory = localStorage.getItem(STORAGE_KEYS.CATEGORY) || '';
       selectedFigure = localStorage.getItem(STORAGE_KEYS.FIGURE) || '';
-      selectedBrigade = localStorage.getItem(STORAGE_KEYS.BRIGADE) || ''; // ← новое
+      selectedBrigade = localStorage.getItem(STORAGE_KEYS.BRIGADE) || '';
 
       const savedIndex = localStorage.getItem(STORAGE_KEYS.CURRENT_INDEX);
       currentIndex = savedIndex ? parseInt(savedIndex, 10) : 0;
@@ -289,10 +285,9 @@ document.addEventListener('DOMContentLoaded', function () {
     autoSendTimer && clearTimeout(autoSendTimer);
     autoSendTimer = null;
     
-    // Сбрасываем UI элементы
     if (brigadeSelect) brigadeSelect.value = '';
     if (brigadeGroup) brigadeGroup.style.display = 'none';
-}
+  }
 
   // =========================
   // DATA: Judges / Participants
@@ -342,6 +337,7 @@ document.addEventListener('DOMContentLoaded', function () {
       score: null,
       scoreId: null,
       isLocal: false,
+      isSending: false, // Новый флаг для отслеживания отправки
     }));
 
     if (cache.enabled) {
@@ -349,7 +345,6 @@ document.addEventListener('DOMContentLoaded', function () {
       cache.lastCacheTime.participants[categoryText] = now;
     }
 
-    // нормализуем индекс при смене категории
     currentIndex = 0;
 
     applyScoresToParticipantsFromCategory();
@@ -397,10 +392,12 @@ document.addEventListener('DOMContentLoaded', function () {
         p.score = saved.score;
         p.scoreId = `local_${saved.timestamp}`;
         p.isLocal = true;
+        p.isSending = false;
       } else {
         p.score = null;
         p.scoreId = null;
         p.isLocal = false;
+        p.isSending = false;
       }
     });
   }
@@ -419,22 +416,29 @@ document.addEventListener('DOMContentLoaded', function () {
       const p = participants[currentIndex];
       startNumberElement.textContent = p.number ?? '-';
       fullNameElement.textContent = p.name ?? '-';
+      
+      // Показываем текущую оценку если есть
       scoreInput.value = p.score !== null ? p.score : '';
+      
+      // Блокируем ввод если оценка отправляется
+      scoreInput.disabled = p.isSending || false;
+      submitBtn.disabled = p.isSending || false;
 
       const progress = (currentIndex / participants.length) * 100;
       progressBar.style.width = `${progress}%`;
       progressText.textContent = `Участник ${currentIndex + 1} из ${participants.length}`;
 
-      setTimeout(() => scoreInput.focus(), 30);
+      setTimeout(() => {
+        if (!p.isSending) scoreInput.focus();
+      }, 30);
     } else {
       startNumberElement.textContent = '-';
       fullNameElement.textContent = 'Все участники пройдены';
       progressBar.style.width = '100%';
       progressText.textContent = `${participants.length} из ${participants.length}`;
       scoreInput.value = '';
-
-      // ТРИГГЕРИМ ПОДТВЕРЖДЕНИЕ ОТПРАВКИ ПРИ ЗАВЕРШЕНИИ
-      triggerSendConfirmationIfReady();
+      scoreInput.disabled = false;
+      submitBtn.disabled = false;
     }
   }
 
@@ -447,16 +451,18 @@ document.addEventListener('DOMContentLoaded', function () {
       if (idx === currentIndex) item.classList.add('current');
       if (p.score !== null) item.classList.add('evaluated');
       if (p.isLocal) item.classList.add('local');
+      if (p.isSending) item.classList.add('sending');
 
-      const localBadge = p.isLocal ? `<span class="local-badge">LOCAL</span>` : '';
+      const statusIcon = p.isSending ? '<span class="sending-spinner">⏳</span>' : 
+                        (p.isLocal ? '<span class="local-badge">💾</span>' : '');
 
       item.innerHTML = `
         <div class="participant-info">
-          <span>${idx + 1}. ${p.name} (№${p.number}) ${localBadge}</span>
+          <span>${idx + 1}. ${p.name} (№${p.number}) ${statusIcon}</span>
         </div>
         <div class="participant-actions">
           <span class="participant-score">${p.score !== null ? p.score : '—'}</span>
-          ${p.score !== null ? `
+          ${p.score !== null && !p.isSending ? `
             <button class="edit-btn" data-id="${p.id}">
               <i class="fas fa-edit"></i> Изменить
             </button>` : ''
@@ -499,15 +505,96 @@ document.addEventListener('DOMContentLoaded', function () {
   }
 
   // =========================
-  // НОВЫЕ ФУНКЦИИ ДЛЯ КНОПКИ ОТПРАВКИ
+  // НОВАЯ ФУНКЦИЯ: ОТПРАВКА ОДНОЙ ОЦЕНКИ
+  // =========================
+  async function sendSingleScore(participant, score) {
+    if (!participant || !score) return false;
+    
+    participant.isSending = true;
+    renderParticipantsList();
+    updateParticipantDisplay();
+    
+    showStatus(`📤 Отправка оценки для ${participant.name}...`, 'info', 0);
+    
+    try {
+      // Подготавливаем данные
+      const figureValue = categoriesWithBrigade.includes(selectedCategory) ? selectedBrigade : selectedFigure;
+      
+      const data = {
+        judgeId: selectedJudge,
+        participantId: participant.id,
+        score: score,
+        category: selectedCategory,
+        figure: figureValue || ''
+      };
+      
+      // Отправляем на сервер
+      const result = await apiRequest('saveScore', data, 30000);
+      
+      if (result.success) {
+        // Успешно отправлено
+        participant.isLocal = false; // Убираем флаг локального сохранения
+        participant.scoreId = result.scoreId || `server_${Date.now()}`;
+        
+        // Удаляем из локального хранилища
+        const map = getCategoryScoresMap(selectedCategory);
+        delete map[String(participant.id)];
+        scoresByCategory[selectedCategory] = map;
+        saveToStorage();
+        
+        showStatus(`✅ Оценка отправлена!`, 'success', 1500);
+        
+        participant.isSending = false;
+        renderParticipantsList();
+        updateParticipantDisplay();
+        updateSendScoresButton();
+        
+        return true;
+      } else {
+        throw new Error(result.error || 'Неизвестная ошибка');
+      }
+      
+    } catch (error) {
+      console.error('Ошибка отправки:', error);
+      
+      // При ошибке оставляем в локальном хранилище
+      participant.isLocal = true;
+      participant.isSending = false;
+      
+      // Сохраняем в локальное хранилище как резерв
+      const map = getCategoryScoresMap(selectedCategory);
+      map[String(participant.id)] = {
+        score: score,
+        judgeId: selectedJudge,
+        category: selectedCategory,
+        figure: categoriesWithBrigade.includes(selectedCategory) ? selectedBrigade : selectedFigure,
+        timestamp: Date.now(),
+        isFirstTime: true
+      };
+      scoresByCategory[selectedCategory] = map;
+      saveToStorage();
+      
+      showStatus(`❌ Ошибка отправки: ${error.message}. Оценка сохранена локально`, 'error', 4000);
+      
+      renderParticipantsList();
+      updateParticipantDisplay();
+      updateSendScoresButton();
+      
+      return false;
+    }
+  }
+
+  // =========================
+  // ФУНКЦИИ ДЛЯ КНОПКИ ОТПРАВКИ (резервной)
   // =========================
   function updateSendScoresButton() {
     const hasLocalScores = checkIfHasLocalScores();
     
-    if (hasLocalScores && currentIndex >= participants.length) {
-        sendScoresBtn.style.display = 'block';
+    // Показываем кнопку только если есть неотправленные оценки
+    if (hasLocalScores) {
+      sendScoresBtn.style.display = 'block';
     } else {
-        sendScoresBtn.style.display = 'none';
+      sendScoresBtn.style.display = 'none';
     }
   }
 
@@ -515,76 +602,6 @@ document.addEventListener('DOMContentLoaded', function () {
     if (!selectedCategory) return false;
     const map = getCategoryScoresMap(selectedCategory);
     return Object.keys(map).length > 0;
-  }
-
-  function showSendConfirmationDialog() {
-    const map = getCategoryScoresMap(selectedCategory);
-    const entries = Object.entries(map);
-    const newScores = entries.filter(([_, s]) => s.isFirstTime).length;
-    const modifiedScores = entries.filter(([_, s]) => !s.isFirstTime).length;
-    
-    const modal = document.createElement('div');
-    modal.className = 'modal-overlay';
-
-    const dialog = document.createElement('div');
-    dialog.className = 'modal-dialog';
-
-    dialog.innerHTML = `
-        <h3><i class="fas fa-paper-plane"></i> Отправка оценок</h3>
-        <div class="modal-content">
-            <p>Вы оценили всех участников. Отправить оценки на сервер?</p>
-            <div style="margin: 15px 0; padding: 15px; background: #f8f9fa; border-radius: 8px;">
-                <p><strong>Категория:</strong> ${selectedCategory}</p>
-                <p><strong>Всего оценок:</strong> ${entries.length}</p>
-                <p><strong>Новых оценок:</strong> ${newScores}</p>
-                <p><strong>Измененных оценок:</strong> ${modifiedScores}</p>
-            </div>
-            <p style="color: #666; font-size: 14px;">После отправки оценки будут сохранены в таблице результатов.</p>
-        </div>
-        <div class="modal-buttons">
-            <button id="sendCancel" style="background: #6c757d; color: white;">Отмена</button>
-            <button id="sendConfirm" style="background: #28a745; color: white;">✅ Отправить</button>
-        </div>
-    `;
-
-    modal.appendChild(dialog);
-    document.body.appendChild(modal);
-
-    document.getElementById('sendConfirm').addEventListener('click', () => {
-        document.body.removeChild(modal);
-        saveBatchToSheetsForCategory(selectedCategory);
-    });
-    
-    document.getElementById('sendCancel').addEventListener('click', () => {
-        document.body.removeChild(modal);
-        // Если отменили - показываем кнопку "Отправить оценки"
-        sendScoresBtn.style.display = 'block';
-        showStatus('📝 Оценки сохранены локально. Вы можете отправить их позже.', 'info', 3000);
-    });
-
-    modal.addEventListener('click', (e) => {
-        if (e.target === modal) {
-            document.body.removeChild(modal);
-            // Если кликнули вне диалога - показываем кнопку "Отправить оценки"
-            sendScoresBtn.style.display = 'block';
-            showStatus('📝 Оценки сохранены локально. Вы можете отправить их позже.', 'info', 3000);
-        }
-    });
-  }
-
-  function triggerSendConfirmationIfReady() {
-    if (isAutoSending) return;
-    if (!selectedCategory) return;
-
-    const map = getCategoryScoresMap(selectedCategory);
-    const count = Object.keys(map).length;
-
-    if (count === 0) return;
-
-    // Показываем попап с подтверждением отправки
-    setTimeout(() => {
-        showSendConfirmationDialog();
-    }, 500); // Небольшая задержка для плавности
   }
 
   // =========================
@@ -605,80 +622,68 @@ document.addEventListener('DOMContentLoaded', function () {
     });
     
     brigadeSelect.addEventListener('change', () => {
-    selectedBrigade = brigadeSelect.value;
-    localStorage.setItem(STORAGE_KEYS.BRIGADE, selectedBrigade);
+      selectedBrigade = brigadeSelect.value;
+      localStorage.setItem(STORAGE_KEYS.BRIGADE, selectedBrigade);
     });
       
     scoreInput.addEventListener('input', function() {
-        if (this.value.includes('.')) {
-            this.value = this.value.replace('.', ',');
-        }
-        // if (this.value.includes('ю')) {
-        //     this.value = this.value.replace('ю', ',');          
-        // }
-      // Список всех символов, которые могут быть введены вместо запятой
-    const symbolsToReplace = [
-    '.', ';', ':', '/', '\\', '|',
-    
-    // Все русские буквы строчные
-    'а', 'б', 'в', 'г', 'д', 'е', 'ё', 'ж', 'з', 'и', 'й', 'к', 'л', 'м', 'н', 'о', 'п', 
-    'р', 'с', 'т', 'у', 'ф', 'х', 'ц', 'ч', 'ш', 'щ', 'ъ', 'ы', 'ь', 'э', 'ю', 'я',
-    
-    // Все русские буквы прописные
-    'А', 'Б', 'В', 'Г', 'Д', 'Е', 'Ё', 'Ж', 'З', 'И', 'Й', 'К', 'Л', 'М', 'Н', 'О', 'П',
-    'Р', 'С', 'Т', 'У', 'Ф', 'Х', 'Ц', 'Ч', 'Ш', 'Щ', 'Ъ', 'Ы', 'Ь', 'Э', 'Ю', 'Я',
-    
-    // Английские буквы строчные
-    'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm',
-    'n', 'o', 'p', 'q', 'r', 's', 't', 'u', 'v', 'w', 'x', 'y', 'z',
-    
-    // Английские буквы прописные
-    'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M',
-    'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z',
-    
-    // Спецсимволы
-    '!', '@', '#', '$', '%', '^', '&', '*', '(', ')', 
-    '-', '_', '=', '+', '[', ']', '{', '}', '"', "'", 
-    '?', '<', '>', '`', '~'
-    ];
-    
-    // Проверяем и заменяем каждый символ
-    symbolsToReplace.forEach(symbol => {
+      // Замена точки на запятую
+      if (this.value.includes('.')) {
+        this.value = this.value.replace('.', ',');
+      }
+      
+      // Список символов для замены на запятую
+      const symbolsToReplace = [
+        '.', ';', ':', '/', '\\', '|',
+        'а', 'б', 'в', 'г', 'д', 'е', 'ё', 'ж', 'з', 'и', 'й', 'к', 'л', 'м', 'н', 'о', 'п', 
+        'р', 'с', 'т', 'у', 'ф', 'х', 'ц', 'ч', 'ш', 'щ', 'ъ', 'ы', 'ь', 'э', 'ю', 'я',
+        'А', 'Б', 'В', 'Г', 'Д', 'Е', 'Ё', 'Ж', 'З', 'И', 'Й', 'К', 'Л', 'М', 'Н', 'О', 'П',
+        'Р', 'С', 'Т', 'У', 'Ф', 'Х', 'Ц', 'Ч', 'Ш', 'Щ', 'Ъ', 'Ы', 'Ь', 'Э', 'Ю', 'Я',
+        'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm',
+        'n', 'o', 'p', 'q', 'r', 's', 't', 'u', 'v', 'w', 'x', 'y', 'z',
+        'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M',
+        'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z',
+        '!', '@', '#', '$', '%', '^', '&', '*', '(', ')', 
+        '-', '_', '=', '+', '[', ']', '{', '}', '"', "'", 
+        '?', '<', '>', '`', '~'
+      ];
+      
+      symbolsToReplace.forEach(symbol => {
         if (this.value.includes(symbol)) {
-            this.value = this.value.replace(symbol, ',');
+          this.value = this.value.replace(new RegExp('\\' + symbol, 'g'), ',');
         }
-    });
+      });
     });
 
-    // Валидация при потере фокуса
     scoreInput.addEventListener('blur', function() {
-        let value = this.value.replace(',', '.'); // Временно для вычислений
-        const numValue = parseFloat(value);
-        
-        if (!isNaN(numValue)) {
-            // Ограничиваем 0-10
-            let corrected = Math.max(0, Math.min(10, numValue));
-            // Округляем до одного знака
-            corrected = Math.round(corrected * 10) / 10;
-            // Возвращаем запятую
-            this.value = corrected.toString().replace('.', ',');
-        }
+      let value = this.value.replace(',', '.');
+      const numValue = parseFloat(value);
+      
+      if (!isNaN(numValue)) {
+        let corrected = Math.max(0, Math.min(10, numValue));
+        corrected = Math.round(corrected * 10) / 10;
+        this.value = corrected.toString().replace('.', ',');
+      }
     });
 
     toggleParticipantsBtn.addEventListener('click', toggleParticipantsList);
+    
+    // ИЗМЕНЕНИЕ: handleSubmit теперь отправляет на сервер
     submitBtn.addEventListener('click', handleSubmit);
+    
     skipBtn.addEventListener('click', handleSkip);
-    sendScoresBtn.addEventListener('click', showSendConfirmationDialog);
+    
+    // ИЗМЕНЕНИЕ: sendScoresBtn теперь отправляет все оставшиеся локальные оценки
+    sendScoresBtn.addEventListener('click', sendAllLocalScores);
 
     scoreInput.addEventListener('keypress', (e) => {
-      if (e.key === 'Enter') submitBtn.click();
+      if (e.key === 'Enter' && !submitBtn.disabled) submitBtn.click();
     });
 
     if (resetSessionBtn) {
       resetSessionBtn.addEventListener('click', () => {
         resetAll();
 
-        // сброс UI
         judgeSelect.value = '';
         categorySelect.value = '';
         figureSelect.value = '';
@@ -693,70 +698,53 @@ document.addEventListener('DOMContentLoaded', function () {
       });
     }
     
-    // === ВСТАВЬТЕ ЗДЕСЬ, ПЕРЕД ЗАКРЫВАЮЩЕЙ СКОБКОЙ ===
-    // =========================
-    // КАСТОМНАЯ КЛАВИАТУРА
-    // =========================
-        // =========================
-    // КАСТОМНАЯ КЛАВИАТУРА (ПРОСТОЙ ВАРИАНТ)
-    // =========================
+    // Кастомная клавиатура
     const customKeyboard = document.getElementById('customKeyboard');
     const toggleKeyboardBtn = document.getElementById('toggleKeyboardBtn');
     
-    // Показать/скрыть клавиатуру
     toggleKeyboardBtn.addEventListener('click', function() {
-        if (customKeyboard.style.display === 'none') {
-            customKeyboard.style.display = 'block';
-            this.innerHTML = '<i class="fas fa-keyboard"></i> Скрыть клавиатуру';
-        } else {
-            customKeyboard.style.display = 'none';
-            this.innerHTML = '<i class="fas fa-keyboard"></i> Показать клавиатуру';
-        }
-    });
-    
-    // Обработка нажатий кнопок клавиатуры
-    document.querySelectorAll('.keyboard-btn').forEach(btn => {
-        btn.addEventListener('click', function() {
-            const value = this.getAttribute('data-value');
-            const scoreInput = document.getElementById('scoreInput');
-            
-            // Просто добавляем значение
-            if (value === ',') {
-                if (!scoreInput.value.includes(',')) {
-                    scoreInput.value += ',';
-                }
-            } else if (this.id === 'keyboardBackspace') {
-                scoreInput.value = scoreInput.value.slice(0, -1);
-            } else {
-                scoreInput.value += value;
-            }
-            
-            // Запускаем событие input для валидации
-            scoreInput.dispatchEvent(new Event('input'));
-        });
-    });
-    
-    // Автоматически показывать клавиатуру при фокусе на поле ввода
-    scoreInput.addEventListener('focus', function() {
-        // Раскомментируйте, если хотите автоматическое открытие
-        if (customKeyboard.style.display === 'none' || customKeyboard.style.display === '') {
-            customKeyboard.style.display = 'block';
-            toggleKeyboardBtn.innerHTML = '<i class="fas fa-keyboard"></i> Скрыть клавиатуру';
-            toggleKeyboardBtn.style.background = 'linear-gradient(145deg, #28a745, #218838)';
-        }
-    });
-    // === КОНЕЦ КОДА КЛАВИАТУРЫ ===
-    
-
-    window.addEventListener('beforeunload', (e) => {
-      // если где-то есть локальные оценки — предупреждаем
-      const hasAnyScores = Object.values(scoresByCategory || {}).some((m) => m && Object.keys(m).length > 0);
-      if (hasAnyScores && !isAutoSending) {
-        e.preventDefault();
-        e.returnValue = 'У вас есть несохраненные оценки. Выйти?';
+      if (customKeyboard.style.display === 'none' || customKeyboard.style.display === '') {
+        customKeyboard.style.display = 'block';
+        this.innerHTML = '<i class="fas fa-keyboard"></i> Скрыть клавиатуру';
+      } else {
+        customKeyboard.style.display = 'none';
+        this.innerHTML = '<i class="fas fa-keyboard"></i> Показать клавиатуру';
       }
     });
     
+    document.querySelectorAll('.keyboard-btn').forEach(btn => {
+      btn.addEventListener('click', function() {
+        const value = this.getAttribute('data-value');
+        const scoreInput = document.getElementById('scoreInput');
+        
+        if (value === ',') {
+          if (!scoreInput.value.includes(',')) {
+            scoreInput.value += ',';
+          }
+        } else if (this.id === 'keyboardBackspace') {
+          scoreInput.value = scoreInput.value.slice(0, -1);
+        } else {
+          scoreInput.value += value;
+        }
+        
+        scoreInput.dispatchEvent(new Event('input'));
+      });
+    });
+    
+    scoreInput.addEventListener('focus', function() {
+      if (customKeyboard.style.display === 'none' || customKeyboard.style.display === '') {
+        customKeyboard.style.display = 'block';
+        toggleKeyboardBtn.innerHTML = '<i class="fas fa-keyboard"></i> Скрыть клавиатуру';
+      }
+    });
+
+    window.addEventListener('beforeunload', (e) => {
+      const hasAnyScores = Object.values(scoresByCategory || {}).some((m) => m && Object.keys(m).length > 0);
+      if (hasAnyScores && !isAutoSending) {
+        e.preventDefault();
+        e.returnValue = 'У вас есть неотправленные оценки. Выйти?';
+      }
+    });
   }
 
   async function handleCategoryChange() {
@@ -764,7 +752,6 @@ document.addEventListener('DOMContentLoaded', function () {
     selectedCategory = newCategoryText;
     localStorage.setItem(STORAGE_KEYS.CATEGORY, selectedCategory);
 
-    // фигуры
     selectedFigure = '';
     figureSelect.value = '';
     localStorage.removeItem(STORAGE_KEYS.FIGURE);
@@ -774,15 +761,15 @@ document.addEventListener('DOMContentLoaded', function () {
     } else {
       figureGroup.style.display = 'none';
     }
-    // БРИГАДА: сбрасываем и скрываем/показываем
+    
     selectedBrigade = '';
     brigadeSelect.value = '';
     localStorage.removeItem(STORAGE_KEYS.BRIGADE);
     
     if (categoriesWithBrigade.includes(selectedCategory)) {
-        brigadeGroup.style.display = 'block';
+      brigadeGroup.style.display = 'block';
     } else {
-        brigadeGroup.style.display = 'none';
+      brigadeGroup.style.display = 'none';
     }
 
     const selectedCategoryValue = categorySelect.value;
@@ -821,82 +808,76 @@ document.addEventListener('DOMContentLoaded', function () {
   // =========================
   function validateForm() {
     if (!selectedJudge) {
-        showStatus('⚠️ Выберите судью!', 'error', 2500);
-        judgeSelect.focus();
-        return false;
+      showStatus('⚠️ Выберите судью!', 'error', 2500);
+      judgeSelect.focus();
+      return false;
     }
     if (!selectedCategory || selectedCategory === '-- Выберите категорию --') {
-        showStatus('⚠️ Выберите категорию!', 'error', 2500);
-        categorySelect.focus();
-        return false;
+      showStatus('⚠️ Выберите категорию!', 'error', 2500);
+      categorySelect.focus();
+      return false;
     }
     if (categoriesWithFigures.includes(selectedCategory) && !selectedFigure) {
-        showStatus('⚠️ Выберите фигуру!', 'error', 2500);
-        figureSelect.focus();
-        return false;
+      showStatus('⚠️ Выберите фигуру!', 'error', 2500);
+      figureSelect.focus();
+      return false;
     }
-    // Проверка бригады (НОВОЕ)
     if (categoriesWithBrigade.includes(selectedCategory) && !selectedBrigade) {
-        showStatus('⚠️ Выберите бригаду!', 'error', 2500);
-        brigadeSelect.focus();
-        return false;
+      showStatus('⚠️ Выберите бригаду!', 'error', 2500);
+      brigadeSelect.focus();
+      return false;
     }
     
-    // === ВОТ ЗДЕСЬ ЗАМЕНИЛИ БЛОК ===
     let score = scoreInput.value.trim();
     
-    // Меняем точку на запятую если есть
     if (score.includes('.')) {
-        score = score.replace('.', ',');
-        scoreInput.value = score;
+      score = score.replace('.', ',');
+      scoreInput.value = score;
     }
     
     if (!score) {
-        showStatus('⚠️ Введите балл!', 'error', 2500);
-        scoreInput.focus();
-        return false;
+      showStatus('⚠️ Введите балл!', 'error', 2500);
+      scoreInput.focus();
+      return false;
     }
     
-    // Для вычислений меняем запятую на точку
     const scoreForCalc = score.replace(',', '.');
     const n = parseFloat(scoreForCalc);
     
     if (Number.isNaN(n)) {
-        showStatus('⚠️ Оценка должна быть числом!', 'error', 2500);
-        scoreInput.focus();
-        scoreInput.select();
-        return false;
+      showStatus('⚠️ Оценка должна быть числом!', 'error', 2500);
+      scoreInput.focus();
+      scoreInput.select();
+      return false;
     }
     
     if (n < 0 || n > 10) {
-        showStatus('⚠️ Оценка должна быть от 0 до 10!', 'error', 2500);
-        scoreInput.focus();
-        scoreInput.select();
-        return false;
+      showStatus('⚠️ Оценка должна быть от 0 до 10!', 'error', 2500);
+      scoreInput.focus();
+      scoreInput.select();
+      return false;
     }
     
-    // Проверка формата
     const commaCount = (score.match(/,/g) || []).length;
     if (commaCount > 1) {
-        showStatus('⚠️ Используйте только одну запятую!', 'error', 2500);
-        scoreInput.focus();
-        scoreInput.select();
-        return false;
+      showStatus('⚠️ Используйте только одну запятую!', 'error', 2500);
+      scoreInput.focus();
+      scoreInput.select();
+      return false;
     }
     
     if (score.includes(',')) {
-        const afterComma = score.split(',')[1];
-        if (afterComma && afterComma.length > 1) {
-            showStatus('⚠️ Используйте только один знак после запятой!', 'error', 2500);
-            scoreInput.focus();
-            scoreInput.select();
-            return false;
-        }
+      const afterComma = score.split(',')[1];
+      if (afterComma && afterComma.length > 1) {
+        showStatus('⚠️ Используйте только один знак после запятой!', 'error', 2500);
+        scoreInput.focus();
+        scoreInput.select();
+        return false;
+      }
     }
-    // === КОНЕЦ ЗАМЕНЕННОГО БЛОКА ===
     
     return true;
-}
+  }
 
   function showConfirmationDialog(messageHtml, callback) {
     const modal = document.createElement('div');
@@ -933,6 +914,7 @@ document.addEventListener('DOMContentLoaded', function () {
     });
   }
 
+  // ИЗМЕНЕНИЕ: handleSubmit теперь отправляет на сервер
   async function handleSubmit() {
     if (!validateForm()) return;
     if (currentIndex >= participants.length) return;
@@ -940,6 +922,12 @@ document.addEventListener('DOMContentLoaded', function () {
     const p = participants[currentIndex];
     const score = scoreInput.value.trim();
     const judge = judges.find((j) => String(j.id) === String(selectedJudge));
+
+    // Если оценка уже отправляется, блокируем повторную отправку
+    if (p.isSending) {
+      showStatus('⏳ Оценка уже отправляется...', 'info', 1500);
+      return;
+    }
 
     let msg = `Вы уверены, что хотите оценить участника?<br><br>`;
     msg += `<strong>Судья:</strong> ${judge ? judge.shortName : ''}<br>`;
@@ -955,9 +943,10 @@ document.addEventListener('DOMContentLoaded', function () {
     }
     msg += `<strong>Балл:</strong> ${score}`;
 
-    showConfirmationDialog(msg, (confirmed) => {
+    showConfirmationDialog(msg, async (confirmed) => {
       if (!confirmed) return;
 
+      // Сначала сохраняем локально (на случай ошибки отправки)
       saveScoreForCurrentCategory(p.id, score);
 
       p.score = score;
@@ -966,9 +955,18 @@ document.addEventListener('DOMContentLoaded', function () {
 
       updateCounters();
       renderParticipantsList();
-      updateSendScoresButton();
+      updateParticipantDisplay();
 
-      setTimeout(() => goToNextParticipant(), 150);
+      // Отправляем на сервер
+      const sent = await sendSingleScore(p, score);
+      
+      if (sent) {
+        // Если успешно отправлено, переходим к следующему
+        setTimeout(() => goToNextParticipant(), 500);
+      } else {
+        // Если ошибка, остаемся на текущем участнике
+        showStatus('⚠️ Оценка сохранена локально. Повторите отправку позже.', 'warning', 3000);
+      }
     });
   }
 
@@ -1001,7 +999,6 @@ document.addEventListener('DOMContentLoaded', function () {
     renderParticipantsList();
     saveToStorage();
     
-    // Обновляем кнопку после перехода
     updateSendScoresButton();
 
     if (isParticipantsListVisible) {
@@ -1019,17 +1016,16 @@ document.addEventListener('DOMContentLoaded', function () {
     const map = getCategoryScoresMap(categoryText);
     const existing = map[String(participantId)];
     
-    // Определяем, это первая оценка или изменение существующей
     const isFirstTime = !existing;
     
     map[String(participantId)] = {
-        score,
-        judgeId: selectedJudge,
-        category: categoryText,
-        figure: selectedFigure || '',
-        brigade: selectedBrigade || '', // ← новое поле
-        timestamp: Date.now(),
-        isFirstTime: isFirstTime
+      score,
+      judgeId: selectedJudge,
+      category: categoryText,
+      figure: selectedFigure || '',
+      brigade: selectedBrigade || '',
+      timestamp: Date.now(),
+      isFirstTime: isFirstTime
     };
 
     scoresByCategory[categoryText] = map;
@@ -1076,114 +1072,143 @@ document.addEventListener('DOMContentLoaded', function () {
     const input = document.getElementById('editScoreInput');
     input.focus();
 
-    document.getElementById('editSave').addEventListener('click', () => {
-        const newScore = input.value.trim();
-        const n = parseFloat(newScore.replace(',', '.'));
+    document.getElementById('editSave').addEventListener('click', async () => {
+      const newScore = input.value.trim();
+      const n = parseFloat(newScore.replace(',', '.'));
 
-        if (!newScore) return alert('Введите новую оценку');
-        if (Number.isNaN(n) || n < 0 || n > 10) return alert('Оценка должна быть от 0 до 10');
+      if (!newScore) return alert('Введите новую оценку');
+      if (Number.isNaN(n) || n < 0 || n > 10) return alert('Оценка должна быть от 0 до 10');
 
-        // При изменении оценки через диалог - это уже не первая оценка
-        const categoryText = selectedCategory || '';
-        const map = getCategoryScoresMap(categoryText);
-        
-        map[String(participant.id)] = {
-            score: newScore,
-            judgeId: selectedJudge,
-            category: categoryText,
-            figure: selectedFigure || '',
-            timestamp: Date.now(),
-            // Явно указываем, что это изменение (не первая оценка)
-            isFirstTime: false
-        };
-        
-        scoresByCategory[categoryText] = map;
-        saveToStorage();
+      const categoryText = selectedCategory || '';
+      const map = getCategoryScoresMap(categoryText);
+      
+      map[String(participant.id)] = {
+        score: newScore,
+        judgeId: selectedJudge,
+        category: categoryText,
+        figure: selectedFigure || '',
+        timestamp: Date.now(),
+        isFirstTime: false
+      };
+      
+      scoresByCategory[categoryText] = map;
+      saveToStorage();
 
-        participant.score = newScore;
-        participant.scoreId = `local_${Date.now()}`;
-        participant.isLocal = true;
+      participant.score = newScore;
+      participant.scoreId = `local_${Date.now()}`;
+      participant.isLocal = true;
 
-        updateCounters();
-        renderParticipantsList();
-        updateSendScoresButton();
+      // Отправляем измененную оценку на сервер
+      await sendSingleScore(participant, newScore);
 
-        document.body.removeChild(modal);
-        showStatus('✅ Оценка изменена', 'info', 1200);
+      updateCounters();
+      renderParticipantsList();
+      updateSendScoresButton();
+
+      document.body.removeChild(modal);
+      showStatus('✅ Оценка изменена и отправлена', 'info', 1200);
     });
 
     document.getElementById('editCancel').addEventListener('click', () => {
-        document.body.removeChild(modal);
+      document.body.removeChild(modal);
     });
 
     input.addEventListener('keypress', (e) => {
-        if (e.key === 'Enter') document.getElementById('editSave').click();
+      if (e.key === 'Enter') document.getElementById('editSave').click();
     });
 
     modal.addEventListener('click', (e) => {
-        if (e.target === modal) document.body.removeChild(modal);
+      if (e.target === modal) document.body.removeChild(modal);
     });
   }
 
   // =========================
-  // ОТПРАВКА ОЦЕНОК
+  // НОВАЯ ФУНКЦИЯ: ОТПРАВКА ВСЕХ ЛОКАЛЬНЫХ ОЦЕНОК
   // =========================
-  async function saveBatchToSheetsForCategory(categoryText) {
-    if (isAutoSending) return;
-
-    const map = getCategoryScoresMap(categoryText);
+  async function sendAllLocalScores() {
+    if (!selectedCategory) return;
+    
+    const map = getCategoryScoresMap(selectedCategory);
     const entries = Object.entries(map);
-    if (entries.length === 0) return;
+    
+    if (entries.length === 0) {
+      sendScoresBtn.style.display = 'none';
+      return;
+    }
+
+    // Подтверждение отправки
+    const newScores = entries.filter(([_, s]) => s.isFirstTime).length;
+    const modifiedScores = entries.filter(([_, s]) => !s.isFirstTime).length;
+    
+    const confirmMsg = `Отправить все локальные оценки на сервер?\n\n` +
+      `Категория: ${selectedCategory}\n` +
+      `Всего оценок: ${entries.length}\n` +
+      `Новых: ${newScores}\n` +
+      `Измененных: ${modifiedScores}`;
+
+    if (!confirm(confirmMsg)) return;
 
     isAutoSending = true;
-    // Скрываем кнопку на время отправки
     sendScoresBtn.style.display = 'none';
-    showStatus(`📤 Отправка оценок (${categoryText}): ${entries.length}...`, 'info', 0);
+    showStatus(`📤 Отправка ${entries.length} оценок...`, 'info', 0);
 
-    try {
-        const scoresArray = entries.map(([participantId, s]) => ({
-            participantId,
-            judgeId: s.judgeId,
-            score: s.score,
-            category: s.category,
-            // figure: s.figure,
-            figure: categoriesWithBrigade.includes(s.category) ? s.brigade : s.figure,
-            timestamp: s.timestamp,
-            // Определяем статус на основе isFirstTime
-            status: s.isFirstTime ? 'Новая' : 'Измененная'
-        }));
+    let successCount = 0;
+    let failCount = 0;
 
-        const payload = JSON.stringify({ scores: scoresArray });
+    for (const [participantId, scoreData] of entries) {
+      const participant = participants.find(p => String(p.id) === participantId);
+      if (!participant) continue;
 
-        const data = await apiRequest('saveScoresBatch', { data: payload }, 60000);
-        if (!data.success) throw new Error(data.error || 'saveScoresBatch: unknown error');
+      participant.isSending = true;
+      renderParticipantsList();
 
-        showStatus(`✅ Отправлено (${categoryText}): ${data.savedCount ?? scoresArray.length}`, 'info', 2200);
+      try {
+        const data = {
+          judgeId: scoreData.judgeId,
+          participantId: participantId,
+          score: scoreData.score,
+          category: scoreData.category,
+          figure: scoreData.figure || ''
+        };
 
-        // Чистим ТОЛЬКО текущую категорию
-        delete scoresByCategory[categoryText];
-        localStorage.setItem(STORAGE_KEYS.SCORES_BY_CATEGORY, JSON.stringify(scoresByCategory));
+        const result = await apiRequest('saveScore', data, 30000);
 
-        // Убираем LOCAL-флаги в текущем UI
-        participants.forEach((p) => {
-            p.isLocal = false;
-            p.scoreId = null;
-        });
-        renderParticipantsList();
-        updateCounters();
-        
-        // После успешной отправки скрываем кнопку
-        updateSendScoresButton();
-
-        isAutoSending = false;
-    } catch (error) {
+        if (result.success) {
+          successCount++;
+          // Удаляем из локального хранилища
+          delete map[participantId];
+          
+          participant.isLocal = false;
+          participant.scoreId = result.scoreId || `server_${Date.now()}`;
+        } else {
+          failCount++;
+          participant.isLocal = true;
+        }
+      } catch (error) {
         console.error('Ошибка отправки:', error);
-        isAutoSending = false;
-        showStatus(`❌ Не удалось отправить (${categoryText}): ${error.message}`, 'error', 9000);
-        // Если ошибка, снова показываем кнопку отправки
-        sendScoresBtn.style.display = 'block';
+        failCount++;
+        participant.isLocal = true;
+      } finally {
+        participant.isSending = false;
+      }
+
+      // Небольшая задержка между запросами
+      await new Promise(resolve => setTimeout(resolve, 300));
+    }
+
+    scoresByCategory[selectedCategory] = map;
+    saveToStorage();
+
+    renderParticipantsList();
+    updateSendScoresButton();
+    isAutoSending = false;
+
+    if (failCount === 0) {
+      showStatus(`✅ Успешно отправлено ${successCount} оценок!`, 'success', 3000);
+    } else {
+      showStatus(`⚠️ Отправлено: ${successCount}, ошибок: ${failCount}`, 'warning', 5000);
     }
   }
 
-  console.log('✅ Система судейства готова к работе!');
+  console.log('✅ Система судейства готова к работе (немедленная отправка)');
 });
