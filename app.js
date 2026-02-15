@@ -84,7 +84,7 @@ document.addEventListener('DOMContentLoaded', function () {
   };
 
   // Категории, где требуется выбор фигуры
-  const categoriesWithFigures = ['Фигуры «Категория 1»', 'Фигуры «10 лет и моложе»', 'Фигуры «12 лет и моложе»'];
+  const categoriesWithFigures = ['category1_1', 'category1_12', 'under10', 'under12'];
   // Категории, где требуется выбор бригады
   const categoriesWithBrigade = [
     'Дуэты',
