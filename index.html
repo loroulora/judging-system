@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Система судейства</title>
     
-    <!-- ФАЙЛ СТИЛЕЙ (ВАЖНО!) -->
+    <!-- ФАЙЛ СТИЛЕЙ -->
     <link rel="stylesheet" href="style.css">
     
     <!-- Font Awesome -->
@@ -50,10 +50,10 @@
             <div class="card">
                 <!-- Выбор судьи -->
                 <div class="form-group">
-                    <label>ВЫБЕРИТЕ СУДЬЮ </label>
+                    <label>ВЫБЕРИТЕ СУДЬЮ</label>
                     <select id="judgeSelect">
-                      <option value="">-- Выберите судью --</option>
-                      <!-- Заполнится автоматически из Google Sheets -->
+                        <option value="">-- Выберите судью --</option>
+                        <!-- Заполнится автоматически из Google Sheets -->
                     </select>
                 </div>
                 
@@ -62,28 +62,7 @@
                     <label>ВЫБЕРИТЕ КАТЕГОРИЮ</label>
                     <select id="categorySelect">
                         <option value="">-- Выберите категорию --</option>
-<!--                         <option value="category1">Фигуры «Категория 1»</option>
-                        <option value="under10">Фигуры «10 лет и моложе»</option>
-                        <option value="under12">Фигуры «12 лет и моложе»</option>
-                        <option value="solo">Соло</option>
-                        <option value="duets">Дуэты</option>
-                        <option value="groups">Группы</option>
-                        <option value="combi">Комби</option>
-                        <option value="trophy">Трофи</option> -->
-                      
-
-                        <option value="category1_1">Категория 1 - с 1 по 11</option>
-                        <option value="category1_12">Категория 1 - с 12 по 21</option>   
-                        <option value="solo1">Соло 1 часть</option>
-                        <option value="solo2">Соло 2 часть</option>                   
-                        <option value="duets">Дуэты</option>
-                        <option value="tech_duets">Технические дуэты</option>         
-                        <option value="tech_solo">Техническое соло</option>         
-                        <option value="groups">Группы</option>
-                        <option value="tech_groups">Технические группы</option>      
-                        <option value="combi">Комби</option>
-                        <option value="trophi">Трофи</option>
-                    
+                        <!-- Заполнится автоматически из Google Sheets -->
                     </select>
                 </div>
                 
@@ -92,7 +71,7 @@
                     <label>ВЫБЕРИТЕ ФИГУРУ</label>
                     <select id="figureSelect">
                         <option value="">-- Выберите фигуру --</option>
-                        <!-- Заполнится из config.js -->
+                        <!-- Заполнится из app.js -->
                     </select>
                 </div>
 
@@ -100,13 +79,13 @@
                 <div class="form-group" id="brigadeGroup" style="display: none;">
                     <label>ВЫБЕРИТЕ БРИГАДУ</label>
                     <select id="brigadeSelect">
-                          <option value="">-- Выберите бригаду --</option>
-                          <!-- Меняем value с английского на русский -->
-                          <option value="Исполнение">Исполнение</option>
-                          <option value="Художественное впечатление">Художественное впечатление</option>
-                          <option value="Сложность">Сложность</option>
-                      </select>
+                        <option value="">-- Выберите бригаду --</option>
+                        <option value="Исполнение">Исполнение</option>
+                        <option value="Художественное впечатление">Художественное впечатление</option>
+                        <option value="Сложность">Сложность</option>
+                    </select>
                 </div>
+
                 <!-- Стартовый номер и ФИО -->
                 <div class="info-row">
                     <div class="info-item">
@@ -133,7 +112,6 @@
                 </div>
                 <div class="progress-text" id="progressText">Участник 0 из 0</div>
                 
-                <!-- === КЛАВИАТУРА СЮДА === -->
                 <!-- Кнопка показа/скрытия клавиатуры -->
                 <button id="toggleKeyboardBtn" style="margin-top: 10px; padding: 10px; background: #6c757d; color: white; border: none; border-radius: 5px; width: 100%; cursor: pointer;">
                     <i class="fas fa-keyboard"></i> Показать клавиатуру
@@ -164,16 +142,13 @@
                         </button>
                     </div>
                 </div>
-                <!-- === КОНЕЦ КЛАВИАТУРЫ === -->
-                
                 
                 <!-- Кнопки -->
                 <div class="button-group">
                     <button class="submit-btn" id="submitBtn">✅ ОЦЕНИТЬ</button>               
                     <button class="skip-btn" id="skipBtn">⏭️ ПРОПУСТИТЬ</button>
                     <button class="send-btn" id="sendScoresBtn" style="display: none;">📤 ОТПРАВИТЬ ОЦЕНКИ</button>
-                    <button id="resetSessionBtn" type="button" class="btn btn-danger"> Сбросить сессию
-                    </button>
+                    <button id="resetSessionBtn" type="button" class="btn btn-danger">🔄 Сбросить сессию</button>
                 </div>
                 
                 <!-- Статус -->
@@ -200,7 +175,7 @@
         </footer>
     </div>
     
-    <!-- ПОДКЛЮЧЕНИЕ JS ФАЙЛОВ (ВАЖНО!) -->
+    <!-- ПОДКЛЮЧЕНИЕ JS ФАЙЛОВ -->
     <script src="config.js"></script>
     <script src="app.js"></script>
 </body>
