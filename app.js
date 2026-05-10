@@ -615,15 +615,16 @@ document.addEventListener('DOMContentLoaded', function () {
   // =========================
   async function sendSingleScore(participant, score) {
     if (!participant || !score) return false;
-    console.log('=== sendSingleScore DEBUG ===');
-    console.log('participant:', participant);
-    console.log('score:', score);
-    console.log('selectedJudge:', selectedJudge);
+    console.log('=== DEBUG sendSingleScore ===');
+    console.log('participant.id:', participant.id);
+    console.log('participant.name:', participant.name);
     console.log('selectedCategory:', selectedCategory);
     console.log('selectedCategoryId:', selectedCategoryId);
-    console.log('selectedFigure:', selectedFigure);
-    console.log('selectedBrigade:', selectedBrigade);
     console.log('categorySelect.value:', categorySelect.value);
+    console.log('selectedJudge:', selectedJudge);
+    console.log('judgeSelect.value:', judgeSelect.value);
+    console.log('============================');
+
 
     
     participant.isSending = true;
