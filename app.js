@@ -184,8 +184,6 @@ document.addEventListener('DOMContentLoaded', function () {
   // =========================
   // INIT
   // =========================
-  initApp();
-
   async function initApp() {
     try {
       restoreFromStorage();
@@ -214,6 +212,25 @@ document.addEventListener('DOMContentLoaded', function () {
       if (selectedCategory) {
         setCategorySelectByText(selectedCategory);
         selectedCategoryId = categorySelect.value;
+
+        // 👇 ФИКС: восстанавливаем фигуры если нужно
+        if (selectedCategoryId && CATEGORIES_WITH_FIGURES[selectedCategoryId]) {
+          figureGroup.style.display = 'block';
+          updateFigures(selectedCategoryId);
+          // Восстанавливаем выбранную фигуру
+          if (selectedFigure) {
+            figureSelect.value = selectedFigure;
+          }
+        }
+
+        // 👇 ФИКС: восстанавливаем бригаду если нужно
+        if (selectedCategoryId && categoriesWithBrigade.includes(selectedCategoryId)) {
+          brigadeGroup.style.display = 'block';
+          if (selectedBrigade) {
+            brigadeSelect.value = selectedBrigade;
+          }
+        }
+
         await loadParticipants(selectedCategory, true);
       } else {
         participants = [];
@@ -232,6 +249,7 @@ document.addEventListener('DOMContentLoaded', function () {
       showStatus('Ошибка загрузки: ' + error.message, 'error', 7000);
     }
   }
+
 
   // =========================
   // STORAGE
