@@ -749,3 +749,26 @@ footer span {
     display: block;
     margin: 0 auto 10px auto;
 }
+.back-btn {
+    background: linear-gradient(135deg, #fd7e14, #e8590c);
+    color: white;
+}
+
+.back-btn:hover:not(:disabled) {
+    transform: translateY(-2px);
+    box-shadow: 0 5px 15px rgba(253, 126, 20, 0.3);
+}
+
+.back-btn:disabled {
+    opacity: 0.3;
+    cursor: not-allowed;
+}
+
+/* Кликабельный участник в списке */
+.participant-item {
+    cursor: pointer;
+}
+
+.participant-item:hover {
+    background-color: #e8f4fd !important;
+}
