@@ -394,7 +394,10 @@ document.addEventListener('DOMContentLoaded', function () {
       cache.lastCacheTime.participants[categoryText] = now;
     }
 
-    currentIndex = 0;
+    // 👇 ФИКС: сбрасываем индекс только если НЕ восстанавливаем сессию
+    if (!isRestoring) {
+      currentIndex = 0;
+    }
 
     applyScoresToParticipantsFromCategory();
     renderParticipantsList();
@@ -406,6 +409,7 @@ document.addEventListener('DOMContentLoaded', function () {
       saveToStorage();
     }
   }
+
 
   // =========================
   // UI HELPERS
