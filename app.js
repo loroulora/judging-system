@@ -148,7 +148,7 @@ document.addEventListener('DOMContentLoaded', function () {
     // =========================
     // API HELPER
     // =========================
-    async function apiRequest(action, params = {}, timeoutMs = 45000) {
+    async function apiRequest(action, params = {}, timeoutMs = 20000) {
         const body = new URLSearchParams({ action, ...params });
         const controller = new AbortController();
         const timer = setTimeout(() => controller.abort(), timeoutMs);
