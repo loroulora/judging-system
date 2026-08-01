@@ -8,31 +8,25 @@ const BRIGADES = [
 
 // === КОНФИГ ФИГУР ===
 const CATEGORIES_WITH_FIGURES = {
-    "category1_1": [
+    "1": [   // 1 категория
         "Кувырок назад",
         "Парус", 
         "Поворот 360", 
         "Волна"
     ],
-    "category1_12": [
-        "Кувырок назад",
-        "Парус", 
-        "Поворот 360", 
-        "Волна"
-    ],
-    "under10": [  
+    "2": [   // 10 лет и моложе
         "Балетная нога",
         "Барракуда",
         "Квадрат",
         "Цветок"
     ],
-    "under12": [
+    "3": [   // 12 лет и моложе
         "Балетная нога",
         "Барракуда", 
         "Ариана",
         "Башня"
     ],
-    "13-15": [
+    "4": [   // 13-15 лет
         "Ипанема",
         "Лондон", 
         "Флай Фиш",
@@ -55,7 +49,6 @@ function updateFigures(selectedCategoryId) {
             option.textContent = figureName;
             figureSelect.appendChild(option);
         });
-        
         figureGroup.style.display = 'block';
     } else {
         figureGroup.style.display = 'none';
@@ -73,6 +66,7 @@ document.addEventListener('DOMContentLoaded', function () {
   const STORAGE_KEYS = {
     JUDGE: 'judging_system_judge',
     CATEGORY: 'judging_system_category',
+    CATEGORY_ID: 'judging_system_category_id',
     FIGURE: 'judging_system_figure',
     BRIGADE: 'judging_system_brigade',
     CURRENT_INDEX: 'judging_system_current_index',
@@ -94,19 +88,37 @@ document.addEventListener('DOMContentLoaded', function () {
     ttl: 5 * 60 * 1000,
   };
 
-  // Категории, где требуется выбор бригады (по тексту)
+  // Категории где требуется выбор бригады (по ID)
   const categoriesWithBrigade = [
-    'Дуэты',
-    'Группы',
-    'Комби', 
-    'Трофи',
-    'Соло 1 часть',
-    'Соло 2 часть',
-    'Технические дуэты',
-    'Техническое соло',
-    'Технические группы'
+    "5",   // Соло 8 лет и моложе
+    "6",   // Соло 10 лет и моложе
+    "7",   // Соло 12 лет и моложе
+    "8",   // Соло 13-15 лет
+    "9",   // Соло Взрослые
+    "10",  // Технические соло
+    "11",  // Дуэты 8 лет и моложе
+    "12",  // Дуэты 10 лет и моложе
+    "13",  // Дуэты 12 лет и моложе
+    "14",  // Дуэты 13-15 лет
+    "15",  // Дуэты Взрослые
+    "16",  // Технические дуэты
+    "17",  // Группы 8 лет и моложе
+    "18",  // Группы 10 лет и моложе
+    "19",  // Группы 12 лет и моложе
+    "20",  // Группы 13-15 лет
+    "21",  // Группы Взрослые
+    "22",  // Технические группы
+    "23",  // Акробатические группы
+    "24",  // Комби 8 лет и моложе
+    "25",  // Комби 10 лет и моложе
+    "26",  // Комби 12 лет и моложе
+    "27",  // Комби 13-15 лет
+    "28",  // Комби Взрослые
+    "29",  // Трофи Соло
+    "30",  // Трофи Дуэты
+    "31"   // Трофи Группы
   ];
-  
+
   // =========================
   // STATE
   // =========================
@@ -115,6 +127,7 @@ document.addEventListener('DOMContentLoaded', function () {
   let currentIndex = 0;
 
   let selectedCategory = '';
+  let selectedCategoryId = '';
   let selectedFigure = '';
   let selectedJudge = '';
   let isParticipantsListVisible = false;
@@ -202,19 +215,34 @@ document.addEventListener('DOMContentLoaded', function () {
     try {
       restoreFromStorage();
 
-      // Загружаем судей и категории параллельно
-      const [_, categories] = await Promise.all([
+      // Загружаем параллельно но обрабатываем ошибки отдельно
+      const [judgesResult, categoriesResult] = await Promise.allSettled([
         loadJudges(),
         loadCategories()
       ]);
 
+      // Судьи
+      if (judgesResult.status === 'rejected') {
+        console.error('Ошибка загрузки судей:', judgesResult.reason);
+        showStatus('Ошибка загрузки судей: ' + judgesResult.reason.message, 'error', 7000);
+      }
+
       populateJudgeSelect();
-      populateCategorySelect(categories);
+
+      // Категории
+      if (categoriesResult.status === 'fulfilled') {
+        populateCategorySelect(categoriesResult.value);
+      } else {
+        console.error('Ошибка загрузки категорий:', categoriesResult.reason);
+        showStatus('Ошибка загрузки категорий: ' + categoriesResult.reason.message, 'error', 7000);
+      }
 
       if (selectedJudge) judgeSelect.value = selectedJudge;
 
       if (selectedCategory) {
         setCategorySelectByText(selectedCategory);
+        // Восстанавливаем ID категории
+        selectedCategoryId = categorySelect.value;
         await loadParticipants(selectedCategory, true);
       } else {
         participants = [];
@@ -227,6 +255,7 @@ document.addEventListener('DOMContentLoaded', function () {
       updateParticipantDisplay();
       updateCounters();
       updateSendScoresButton();
+
     } catch (error) {
       console.error('Ошибка инициализации:', error);
       showStatus('Ошибка загрузки: ' + error.message, 'error', 7000);
@@ -240,6 +269,7 @@ document.addEventListener('DOMContentLoaded', function () {
     try {
       selectedJudge = localStorage.getItem(STORAGE_KEYS.JUDGE) || '';
       selectedCategory = localStorage.getItem(STORAGE_KEYS.CATEGORY) || '';
+      selectedCategoryId = localStorage.getItem(STORAGE_KEYS.CATEGORY_ID) || '';
       selectedFigure = localStorage.getItem(STORAGE_KEYS.FIGURE) || '';
       selectedBrigade = localStorage.getItem(STORAGE_KEYS.BRIGADE) || '';
 
@@ -267,6 +297,9 @@ document.addEventListener('DOMContentLoaded', function () {
 
       if (selectedCategory) localStorage.setItem(STORAGE_KEYS.CATEGORY, selectedCategory);
       else localStorage.removeItem(STORAGE_KEYS.CATEGORY);
+
+      if (selectedCategoryId) localStorage.setItem(STORAGE_KEYS.CATEGORY_ID, selectedCategoryId);
+      else localStorage.removeItem(STORAGE_KEYS.CATEGORY_ID);
 
       if (selectedFigure) localStorage.setItem(STORAGE_KEYS.FIGURE, selectedFigure);
       else localStorage.removeItem(STORAGE_KEYS.FIGURE);
@@ -296,6 +329,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
     selectedJudge = '';
     selectedCategory = '';
+    selectedCategoryId = '';
     selectedFigure = '';
     selectedBrigade = '';
     currentIndex = 0;
@@ -308,6 +342,7 @@ document.addEventListener('DOMContentLoaded', function () {
     
     if (brigadeSelect) brigadeSelect.value = '';
     if (brigadeGroup) brigadeGroup.style.display = 'none';
+    if (figureGroup) figureGroup.style.display = 'none';
   }
 
   // =========================
@@ -424,11 +459,10 @@ document.addEventListener('DOMContentLoaded', function () {
 
   function populateCategorySelect(categories) {
     categorySelect.innerHTML = '<option value="">-- Выберите категорию --</option>';
-    
     categories.forEach(cat => {
       const opt = document.createElement('option');
-      opt.value = cat.id;
-      opt.textContent = cat.name;
+      opt.value = cat.id;        // ID: "1", "2", "3"...
+      opt.textContent = cat.name; // Текст: "1 категория", "10 лет и моложе"...
       categorySelect.appendChild(opt);
     });
   }
@@ -448,8 +482,10 @@ document.addEventListener('DOMContentLoaded', function () {
     if (!selectedCategory) return;
     const map = getCategoryScoresMap(selectedCategory);
 
-    // Учитываем текущую фигуру/бригаду при восстановлении
-    const figureValue = categoriesWithBrigade.includes(selectedCategory)
+    // Используем сохранённый ID категории
+    const catId = selectedCategoryId || categorySelect.value;
+
+    const figureValue = categoriesWithBrigade.includes(catId)
       ? selectedBrigade
       : selectedFigure;
 
@@ -587,7 +623,8 @@ document.addEventListener('DOMContentLoaded', function () {
     showStatus(`📤 Отправка оценки для ${participant.name}...`, 'info', 0);
     
     try {
-      const figureValue = categoriesWithBrigade.includes(selectedCategory) 
+      const catId = selectedCategoryId || categorySelect.value;
+      const figureValue = categoriesWithBrigade.includes(catId) 
         ? selectedBrigade 
         : selectedFigure;
       
@@ -606,7 +643,6 @@ document.addEventListener('DOMContentLoaded', function () {
         participant.isLocal = false;
         participant.scoreId = result.scoreId || `server_${Date.now()}`;
         
-        // Удаляем из локального хранилища по правильному ключу
         const map = getCategoryScoresMap(selectedCategory);
         const scoreKey = figureValue 
           ? `${participant.id}_${figureValue}` 
@@ -633,7 +669,8 @@ document.addEventListener('DOMContentLoaded', function () {
       participant.isLocal = true;
       participant.isSending = false;
 
-      const figureValue = categoriesWithBrigade.includes(selectedCategory) 
+      const catId = selectedCategoryId || categorySelect.value;
+      const figureValue = categoriesWithBrigade.includes(catId) 
         ? selectedBrigade 
         : selectedFigure;
       
@@ -694,7 +731,6 @@ document.addEventListener('DOMContentLoaded', function () {
     figureSelect.addEventListener('change', () => {
       selectedFigure = figureSelect.value;
       localStorage.setItem(STORAGE_KEYS.FIGURE, selectedFigure);
-      // Обновляем оценки при смене фигуры
       applyScoresToParticipantsFromCategory();
       renderParticipantsList();
       updateCounters();
@@ -704,7 +740,6 @@ document.addEventListener('DOMContentLoaded', function () {
     brigadeSelect.addEventListener('change', () => {
       selectedBrigade = brigadeSelect.value;
       localStorage.setItem(STORAGE_KEYS.BRIGADE, selectedBrigade);
-      // Обновляем оценки при смене бригады
       applyScoresToParticipantsFromCategory();
       renderParticipantsList();
       updateCounters();
@@ -766,6 +801,7 @@ document.addEventListener('DOMContentLoaded', function () {
         categorySelect.value = '';
         figureSelect.value = '';
         figureGroup.style.display = 'none';
+        brigadeGroup.style.display = 'none';
         sendScoresBtn.style.display = 'none';
 
         renderParticipantsList();
@@ -827,19 +863,25 @@ document.addEventListener('DOMContentLoaded', function () {
     });
   }
 
+  // =========================
+  // CATEGORY CHANGE
+  // =========================
   async function handleCategoryChange() {
     const selectedOption = categorySelect.options[categorySelect.selectedIndex];
     const newCategoryText = selectedOption.text;
-    const newCategoryValue = selectedOption.value;
+    const newCategoryValue = selectedOption.value; // ID: "1", "2"...
 
     selectedCategory = newCategoryText;
+    selectedCategoryId = newCategoryValue;
+
     localStorage.setItem(STORAGE_KEYS.CATEGORY, selectedCategory);
+    localStorage.setItem(STORAGE_KEYS.CATEGORY_ID, selectedCategoryId);
 
     selectedFigure = '';
     figureSelect.value = '';
     localStorage.removeItem(STORAGE_KEYS.FIGURE);
 
-    // Проверяем по value категории
+    // Проверяем по ID
     if (CATEGORIES_WITH_FIGURES[newCategoryValue]) {
       figureGroup.style.display = 'block';
       updateFigures(newCategoryValue);
@@ -852,8 +894,8 @@ document.addEventListener('DOMContentLoaded', function () {
     brigadeSelect.value = '';
     localStorage.removeItem(STORAGE_KEYS.BRIGADE);
     
-    // Проверяем по тексту категории
-    if (categoriesWithBrigade.includes(newCategoryText)) {
+    // Проверяем по ID
+    if (categoriesWithBrigade.includes(newCategoryValue)) {
       brigadeGroup.style.display = 'block';
     } else {
       brigadeGroup.style.display = 'none';
@@ -902,15 +944,15 @@ document.addEventListener('DOMContentLoaded', function () {
       return false;
     }
 
-    // Проверяем по value категории
-    const currentCategoryValue = categorySelect.value;
+    const currentCategoryValue = categorySelect.value; // ID
+
     if (CATEGORIES_WITH_FIGURES[currentCategoryValue] && !selectedFigure) {
       showStatus('⚠️ Выберите фигуру!', 'error', 2500);
       figureSelect.focus();
       return false;
     }
 
-    if (categoriesWithBrigade.includes(selectedCategory) && !selectedBrigade) {
+    if (categoriesWithBrigade.includes(currentCategoryValue) && !selectedBrigade) {
       showStatus('⚠️ Выберите бригаду!', 'error', 2500);
       brigadeSelect.focus();
       return false;
@@ -1032,7 +1074,6 @@ document.addEventListener('DOMContentLoaded', function () {
     showConfirmationDialog(msg, async (confirmed) => {
       if (!confirmed) return;
 
-      // Сохраняем локально на случай ошибки
       saveScoreForCurrentCategory(p.id, score);
 
       p.score = score;
@@ -1097,11 +1138,11 @@ document.addEventListener('DOMContentLoaded', function () {
 
     const map = getCategoryScoresMap(categoryText);
 
-    const figureValue = categoriesWithBrigade.includes(selectedCategory) 
+    const catId = selectedCategoryId || categorySelect.value;
+    const figureValue = categoriesWithBrigade.includes(catId) 
       ? selectedBrigade 
       : selectedFigure;
 
-    // Уникальный ключ: participantId + фигура/бригада
     const scoreKey = figureValue 
       ? `${participantId}_${figureValue}` 
       : String(participantId);
@@ -1173,7 +1214,8 @@ document.addEventListener('DOMContentLoaded', function () {
       const categoryText = selectedCategory || '';
       const map = getCategoryScoresMap(categoryText);
 
-      const figureValue = categoriesWithBrigade.includes(selectedCategory)
+      const catId = selectedCategoryId || categorySelect.value;
+      const figureValue = categoriesWithBrigade.includes(catId)
         ? selectedBrigade
         : selectedFigure;
 
@@ -1256,7 +1298,6 @@ document.addEventListener('DOMContentLoaded', function () {
     let failCount = 0;
 
     for (const [scoreKey, scoreData] of entries) {
-      // Ищем участника по participantId внутри объекта
       const participant = participants.find(
         p => String(p.id) === String(scoreData.participantId)
       );
