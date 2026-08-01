@@ -1,9 +1,12 @@
+// === КОНФИГ БРИГАД ===
 const BRIGADES = [
     { value: 'Исполнение', text: 'Исполнение' },
     { value: 'Художественное впечатление', text: 'Художественное впечатление' },
     { value: 'Сложность', text: 'Сложность' }
 ];
+// === КОНЕЦ КОНФИГА БРИГАД ===
 
+// === КОНФИГ ФИГУР ===
 const CATEGORIES_WITH_FIGURES = {
     "1": [
         "Кувырок назад",
@@ -20,8 +23,8 @@ const CATEGORIES_WITH_FIGURES = {
     "3": [
         "Балетная нога",
         "Барракуда",
-        "Ариана",
-        "Башня"
+        "Капля",
+        "Рыба меч"
     ],
     "4": [
         "Ипанэма",
@@ -30,7 +33,9 @@ const CATEGORIES_WITH_FIGURES = {
         "Циклон"
     ]
 };
+// === КОНЕЦ КОНФИГА ===
 
+// === ФУНКЦИЯ ОБНОВЛЕНИЯ ФИГУР ===
 function updateFigures(selectedCategoryId) {
     const figureSelect = document.getElementById('figureSelect');
     const figureGroup = document.getElementById('figureGroup');
@@ -50,8 +55,12 @@ function updateFigures(selectedCategoryId) {
         figureSelect.value = "";
     }
 }
+// === КОНЕЦ ФУНКЦИИ ===
 
 document.addEventListener('DOMContentLoaded', function () {
+    // =========================
+    // CONFIG
+    // =========================
     const API_URL = window.APP_CONFIG?.API_URL || 'https://script.google.com/macros/s/AKfycbyO4MXymmhXZoNnDa1Sxss2sVsi4gQLhPLWT8MJfUZuAHb8k2t5B24MomehklkLKBsU/exec';
 
     const STORAGE_KEYS = {
@@ -86,43 +95,60 @@ document.addEventListener('DOMContentLoaded', function () {
         "29", "30", "31"
     ];
 
+    // =========================
+    // STATE
+    // =========================
     let judges = [];
     let participants = [];
     let currentIndex = 0;
+
     let selectedCategory = '';
     let selectedCategoryId = '';
     let selectedFigure = '';
     let selectedJudge = '';
     let isParticipantsListVisible = false;
     let selectedBrigade = '';
+
     let scoresByCategory = {};
     let isAutoSending = false;
     let autoSendTimer = null;
 
+    // =========================
+    // DOM
+    // =========================
     const judgeSelect = document.getElementById('judgeSelect');
     const categorySelect = document.getElementById('categorySelect');
     const figureGroup = document.getElementById('figureGroup');
     const figureSelect = document.getElementById('figureSelect');
     const brigadeGroup = document.getElementById('brigadeGroup');
     const brigadeSelect = document.getElementById('brigadeSelect');
+
     const startNumberElement = document.getElementById('startNumber');
     const fullNameElement = document.getElementById('fullName');
+
     const scoreInput = document.getElementById('scoreInput');
     const submitBtn = document.getElementById('submitBtn');
     const skipBtn = document.getElementById('skipBtn');
     const backBtn = document.getElementById('backBtn');
     const sendScoresBtn = document.getElementById('sendScoresBtn');
+
     const statusMessage = document.getElementById('statusMessage');
     const progressBar = document.getElementById('progressBar');
     const progressText = document.getElementById('progressText');
+
     const participantsList = document.getElementById('participantsList');
     const participantsListContainer = document.getElementById('participantsListContainer');
     const toggleParticipantsBtn = document.getElementById('toggleParticipantsBtn');
+
     const remainingCountEl = document.getElementById('remainingCount');
     const evaluatedCountEl = document.getElementById('evaluatedCount');
+
     const resetSessionBtn = document.getElementById('resetSessionBtn');
 
-    async function apiRequest(action, params = {}, timeoutMs = 45000) {
+    // =========================
+    // API HELPER
+    // =========================
+    async function apiRequest(action, params = {}, timeoutMs = 25000) {
         const body = new URLSearchParams({ action, ...params });
         const controller = new AbortController();
         const timer = setTimeout(() => controller.abort(), timeoutMs);
@@ -155,6 +181,9 @@ document.addEventListener('DOMContentLoaded', function () {
         }
     }
 
+    // =========================
+    // INIT
+    // =========================
     initApp();
 
     async function initApp() {
@@ -186,6 +215,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 setCategorySelectByText(selectedCategory);
                 selectedCategoryId = categorySelect.value;
 
+                // Восстанавливаем фигуры если нужно
                 if (selectedCategoryId && CATEGORIES_WITH_FIGURES[selectedCategoryId]) {
                     figureGroup.style.display = 'block';
                     updateFigures(selectedCategoryId);
@@ -194,6 +224,7 @@ document.addEventListener('DOMContentLoaded', function () {
                     }
                 }
 
+                // Восстанавливаем бригаду если нужно
                 if (selectedCategoryId && categoriesWithBrigade.includes(selectedCategoryId)) {
                     brigadeGroup.style.display = 'block';
                     if (selectedBrigade) {
@@ -220,6 +251,9 @@ document.addEventListener('DOMContentLoaded', function () {
         }
     }
 
+    // =========================
+    // STORAGE
+    // =========================
     function restoreFromStorage() {
         try {
             selectedJudge = localStorage.getItem(STORAGE_KEYS.JUDGE) || '';
@@ -299,6 +333,9 @@ document.addEventListener('DOMContentLoaded', function () {
         if (figureGroup) figureGroup.style.display = 'none';
     }
 
+    // =========================
+    // DATA
+    // =========================
     async function loadJudges() {
         const now = Date.now();
         if (cache.enabled && cache.judges && now - cache.lastCacheTime.judges < cache.ttl) {
@@ -375,6 +412,7 @@ document.addEventListener('DOMContentLoaded', function () {
             cache.lastCacheTime.participants[categoryText] = now;
         }
 
+        // Сбрасываем индекс только если НЕ восстанавливаем сессию
         if (!isRestoring) {
             currentIndex = 0;
         }
@@ -390,6 +428,9 @@ document.addEventListener('DOMContentLoaded', function () {
         }
     }
 
+    // =========================
+    // UI HELPERS
+    // =========================
     function populateJudgeSelect() {
         judgeSelect.innerHTML = '<option value="">-- Выберите судью --</option>';
         judges.forEach((j) => {
@@ -462,6 +503,7 @@ document.addEventListener('DOMContentLoaded', function () {
             return;
         }
 
+        // Управление кнопкой назад
         if (backBtn) backBtn.disabled = currentIndex === 0;
 
         if (currentIndex < participants.length) {
@@ -520,6 +562,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 </div>
             `;
 
+            // Клик по участнику — переход к нему
             item.addEventListener('click', (e) => {
                 if (e.target.closest('.edit-btn')) return;
                 navigateToParticipant(idx);
@@ -537,6 +580,7 @@ document.addEventListener('DOMContentLoaded', function () {
         });
     }
 
+    // Навигация к участнику по индексу
     function navigateToParticipant(idx) {
         if (idx < 0 || idx >= participants.length) return;
 
@@ -576,6 +620,9 @@ document.addEventListener('DOMContentLoaded', function () {
         statusMessage.style.display = 'none';
     }
 
+    // =========================
+    // ВАЛИДАЦИЯ ОЦЕНКИ
+    // =========================
     function validateScore(scoreValue) {
         let score = scoreValue.trim();
 
@@ -641,6 +688,9 @@ document.addEventListener('DOMContentLoaded', function () {
         return true;
     }
 
+    // =========================
+    // ОТПРАВКА ОДНОЙ ОЦЕНКИ
+    // =========================
     async function sendSingleScore(participant, score) {
         if (!participant || !score) return false;
 
@@ -730,6 +780,9 @@ document.addEventListener('DOMContentLoaded', function () {
         }
     }
 
+    // =========================
+    // КНОПКА ОТПРАВКИ ЛОКАЛЬНЫХ ОЦЕНОК
+    // =========================
     function updateSendScoresButton() {
         const hasLocalScores = checkIfHasLocalScores();
         sendScoresBtn.style.display = hasLocalScores ? 'block' : 'none';
@@ -741,6 +794,9 @@ document.addEventListener('DOMContentLoaded', function () {
         return Object.keys(map).length > 0;
     }
 
+    // =========================
+    // EVENTS
+    // =========================
     function setupEventListeners() {
         judgeSelect.addEventListener('change', () => {
             selectedJudge = judgeSelect.value;
@@ -839,6 +895,7 @@ document.addEventListener('DOMContentLoaded', function () {
             });
         }
 
+        // Кастомная клавиатура
         const customKeyboard = document.getElementById('customKeyboard');
         const toggleKeyboardBtn = document.getElementById('toggleKeyboardBtn');
 
@@ -889,6 +946,9 @@ document.addEventListener('DOMContentLoaded', function () {
         });
     }
 
+    // =========================
+    // CATEGORY CHANGE
+    // =========================
     async function handleCategoryChange() {
         const selectedOption = categorySelect.options[categorySelect.selectedIndex];
         const newCategoryText = selectedOption.text;
@@ -950,6 +1010,9 @@ document.addEventListener('DOMContentLoaded', function () {
         }
     }
 
+    // =========================
+    // SUBMIT / SKIP / BACK
+    // =========================
     function showConfirmationDialog(messageHtml, callback) {
         const modal = document.createElement('div');
         modal.className = 'modal-overlay';
@@ -1132,6 +1195,9 @@ document.addEventListener('DOMContentLoaded', function () {
         updateSendScoresButton();
     }
 
+    // =========================
+    // EDIT DIALOG
+    // =========================
     function showEditDialog(participant) {
         const modal = document.createElement('div');
         modal.className = 'modal-overlay';
@@ -1265,6 +1331,9 @@ document.addEventListener('DOMContentLoaded', function () {
         });
     }
 
+    // =========================
+    // ОТПРАВКА ВСЕХ ЛОКАЛЬНЫХ ОЦЕНОК
+    // =========================
     async function sendAllLocalScores() {
         if (!selectedCategory) return;
 
